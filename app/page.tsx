@@ -50,7 +50,7 @@ export default function Page() {
         </div>
       </main>
       <footer>
-        <a href="https://beian.miit.gov.cn/">京ICP备19043673号</a>
+        <a href="https://beian.miit.gov.cn/">京ICP备19043673号-2</a>
       </footer>
     </div>
   );
