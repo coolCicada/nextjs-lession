@@ -1,6 +1,32 @@
 .Main {
-    footer {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    main {
+        flex: 1;
         display: flex;
         justify-content: center;
+        align-items: center;
+        a {
+            padding: 12px;
+            border-radius: 4px;
+            text-decoration: none;
+            color: inherit;
+            font-weight: bold;
+            font-size: 2em;
+            &:hover {
+                text-decoration: underline;
+            }
+        }
+    }
+    footer {
+        height: 30px;
+        display: flex;
+        justify-content: center;
+        a {
+            display: flex;
+            align-items: center;
+            color: gainsboro;
+        }
     }
 }
