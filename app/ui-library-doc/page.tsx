@@ -1,3 +1,4 @@
+'use client';
 import React from 'react'
 import Doc from 'simply-ui-docs';
 import 'simply-ui-docs/dist/style.css';

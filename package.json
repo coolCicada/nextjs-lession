@@ -24,7 +24,7 @@
     "react-dnd-html5-backend": "^16.0.1",
     "react-dom": "18.2.0",
     "sass": "^1.77.8",
-    "simply-ui-docs": "^0.0.3",
+    "simply-ui-docs": "^0.0.5",
     "tailwindcss": "3.3.3",
     "typescript": "5.2.2",
     "use-debounce": "^10.0.3",
