@@ -1,19 +1,26 @@
-import pageStyles from './page.module.scss';
-import { headers } from 'next/headers';
+'use client';
+import { useRouter } from 'next/navigation';
 
-export default function Page() {
-  const headersList = headers();
-  const host = headersList.get('host');
-  const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
-  const fullUrl = `${protocol}://${host}`;
-  const authorize_uri = 'https://github.com/login/oauth/authorize';
-  const redirect_uri = `${fullUrl}/oauth/redirect`;
-  const client_id = 'Ov23liUnZqGG3ebbDhPv';
-  const url = `${authorize_uri}?client_id=${client_id}&redirect_uri=${redirect_uri}`;
+const Page = () => {
+  const router = useRouter();
   return (
-    <div className={pageStyles.Main}>
-      <main>
-        <a href={url}>Login With GitHub</a>
+    <div className='min-h-screen flex flex-col'>
+      <main className='flex-1 p-4 flex flex-wrap content-start'>
+        <div onClick={() => router.push('/oauth')} className='mr-2 mb-2 w-32 h-32 bg-slate-300 border flex justify-center items-center rounded-lg'>
+          oauth
+        </div>
+        <div onClick={() => router.push('/ui-library-doc')} className='mr-2 mb-2 w-32 h-32 bg-slate-300 border flex justify-center items-center rounded-lg'>
+          UI 组件库文档
+        </div>
+        <div onClick={() => router.push('/nick')} className='mr-2 mb-2 w-32 h-32 bg-slate-300 border flex justify-center items-center rounded-lg'>
+          nick
+        </div>
+        <div onClick={() => router.push('/login')} className='mr-2 mb-2 w-32 h-32 bg-slate-300 border flex justify-center items-center rounded-lg'>
+          login
+        </div>
+        <div onClick={() => router.push('/tailwindcss')} className='mr-2 mb-2 w-32 h-32 bg-slate-300 border flex justify-center items-center rounded-lg'>
+          tailwindcss
+        </div>
       </main>
       <footer>
         <a href="https://beian.miit.gov.cn/">京ICP备19043673号-2</a>
@@ -21,3 +28,5 @@ export default function Page() {
     </div>
   );
 }
+
+export default Page;
