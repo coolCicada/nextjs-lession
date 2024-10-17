@@ -1,7 +1,7 @@
 'use client';
 import React from 'react'
-import Doc from 'simply-ui-docs';
-import 'simply-ui-docs/dist/style.css';
+import Doc from 'doc-simply-ui';
+import 'doc-simply-ui/dist/style.css';
 
 const Page = () => {
   return (
