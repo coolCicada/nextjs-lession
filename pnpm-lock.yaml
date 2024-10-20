@@ -39,8 +39,8 @@ dependencies:
     specifier: ^2.0.0
     version: 2.1.1
   doc-simply-ui:
-    specifier: ^0.0.1
-    version: 0.0.1(react@18.2.0)
+    specifier: 0.0.4
+    version: 0.0.4(react@18.2.0)
   next:
     specifier: ^14.2.7
     version: 14.2.15(@babel/core@7.25.8)(react-dom@18.2.0)(react@18.2.0)(sass@1.80.3)
@@ -59,9 +59,6 @@ dependencies:
   react-dom:
     specifier: 18.2.0
     version: 18.2.0(react@18.2.0)
-  simply-ui-docs:
-    specifier: ^0.0.5
-    version: 0.0.5(react-dom@18.2.0)(react@18.2.0)
   tailwindcss:
     specifier: 3.3.3
     version: 3.3.3
@@ -879,10 +876,6 @@ packages:
       '@types/node': 20.5.7
       pg-protocol: 1.7.0
       pg-types: 2.2.0
-    dev: false
-
-  /@types/prismjs@1.26.4:
-    resolution: {integrity: sha512-rlAnzkW2sZOjbqZ743IHUhFcvzaGbqijwOu8QZnZCjfQzBqFE3s4lOTJEsxikImav9uzz/42I+O7YUs1mWgMlg==}
     dev: false
 
   /@types/prop-types@15.7.13:
@@ -2102,14 +2095,15 @@ packages:
       redux: 4.2.1
     dev: false
 
-  /doc-simply-ui@0.0.1(react@18.2.0):
-    resolution: {integrity: sha512-62zXeDMaYjsSMEnCGTOIw5pVLJt8Vqc/lHPCEVJ7Ajj9sAFlpz7uNMF1Ok9qzWqu+Dv/nfHUfGz0EI3lsPbBpA==}
+  /doc-simply-ui@0.0.4(react@18.2.0):
+    resolution: {integrity: sha512-Rgi1x1wynw12Cl8AC6By9YlKxg88akhCfLAsufy0NU4RVRC7nS/VO9zhwbXgpk0utp4RhbsTEn6dyZDROx05Ew==}
     dependencies:
       highlight.js: 11.10.0
       postcss: 8.4.47
       postcss-prefix-selector: 2.1.0(postcss@8.4.47)
       postcss-prefixer: 3.0.0(postcss@8.4.47)
       react-syntax-highlighter: 15.6.1(react@18.2.0)
+      unist-util-visit: 5.0.0
     transitivePeerDependencies:
       - react
     dev: false
@@ -4869,16 +4863,6 @@ packages:
     hasBin: true
     dev: true
 
-  /prism-react-renderer@2.4.0(react@18.2.0):
-    resolution: {integrity: sha512-327BsVCD/unU4CNLZTWVHyUHKnsqcvj2qbPlQ8MiBE2eq2rgctjigPA1Gp9HLF83kZ20zNN6jgizHJeEsyFYOw==}
-    peerDependencies:
-      react: '>=16.0.0'
-    dependencies:
-      '@types/prismjs': 1.26.4
-      clsx: 2.1.1
-      react: 18.2.0
-    dev: false
-
   /prismjs@1.27.0:
     resolution: {integrity: sha512-t13BGPUlFDR7wRB5kQDG4jjl7XeuH6jbJGt11JHPL96qwsEHNX2+68tFXqc1/k+/jALsbSWJKUOT/hcYAZ5LkA==}
     engines: {node: '>=6'}
@@ -5283,18 +5267,6 @@ packages:
   /signal-exit@4.1.0:
     resolution: {integrity: sha512-bzyZ1e88w9O1iNJbKnOlvYTrWPDl46O1bG0D3XInv+9tkPrxrN8jUUTiFlDkkmKWgn1M6CfIA13SuGqOa9Korw==}
     engines: {node: '>=14'}
-
-  /simply-ui-docs@0.0.5(react-dom@18.2.0)(react@18.2.0):
-    resolution: {integrity: sha512-gLR8uv1wsyv06LQ4Ei9JJuRo5L7O1HlrQRy/nuIhjb3F269536XTXIZrN0g/blGOCEFXWWzonyYr5VcCXDeEiQ==}
-    peerDependencies:
-      react: ^18.0.0
-      react-dom: ^18.0.0
-    dependencies:
-      prism-react-renderer: 2.4.0(react@18.2.0)
-      react: 18.2.0
-      react-dom: 18.2.0(react@18.2.0)
-      react-syntax-highlighter: 15.6.1(react@18.2.0)
-    dev: false
 
   /slash@3.0.0:
     resolution: {integrity: sha512-g9Q1haeby36OSStwb4ntCGGGaKsaVSjQ68fBxoQcutl5fS1vuY18H3wSt3jFyFtrkx+Kz0V1G85A4MyAdDMi2Q==}
