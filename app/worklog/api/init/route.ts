@@ -6,6 +6,14 @@ function getErrorMessage(error: unknown): string {
 }
 
 export async function GET() {
+  return handleInit();
+}
+
+export async function POST() {
+  return handleInit();
+}
+
+async function handleInit() {
   try {
     await sql`
       CREATE TABLE IF NOT EXISTS chat_tasks (
