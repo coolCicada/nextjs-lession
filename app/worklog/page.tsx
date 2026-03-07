@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-type TaskStatus = "active" | "recurring" | "done";
+type TaskStatus = "active" | "recurring" | "done" | "canceled";
 
 type Task = {
   id: string;
@@ -17,52 +17,135 @@ type Task = {
   updatedAt: string;
 };
 
-// Status columns config
-const columns: { id: TaskStatus; title: string; icon: string; color: string; bg: string }[] = [
-  { id: "active", title: "进行中", icon: "🚀", color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/20" },
-  { id: "recurring", title: "周期任务", icon: "🔄", color: "text-purple-400", bg: "bg-purple-500/10 border-purple-500/20" },
-  { id: "done", title: "已完成", icon: "✅", color: "text-green-400", bg: "bg-green-500/10 border-green-500/20" },
-];
+// 视图模式
+type ViewMode = "kanban" | "timeline";
 
-function formatDate(date: string) {
+// 时间分组
+type TimeGroup = {
+  key: string;
+  label: string;
+  tasks: Task[];
+};
+
+function formatDate(date: string | undefined, withTime = true) {
+  if (!date) return "--";
   try {
-    return new Date(date).toLocaleString("zh-CN", {
+    const d = new Date(date);
+    if (withTime) {
+      return d.toLocaleString("zh-CN", {
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    }
+    return d.toLocaleDateString("zh-CN", {
       month: "short",
       day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
+      weekday: "short",
     });
   } catch {
     return "--";
   }
 }
 
-function formatRelativeTime(date: string) {
+function getRelativeTimeGroup(date: string | undefined): string {
+  if (!date) return "未安排";
+  try {
+    const now = new Date();
+    const target = new Date(date);
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const targetDay = new Date(target.getFullYear(), target.getMonth(), target.getDate());
+    
+    const diffDays = Math.floor((targetDay.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (diffDays < 0) return "已过期";
+    if (diffDays === 0) return "今天";
+    if (diffDays === 1) return "明天";
+    if (diffDays < 7) return "本周";
+    if (diffDays < 30) return "未来";
+    return "远期";
+  } catch {
+    return "未安排";
+  }
+}
+
+function formatTimeLeft(date: string | undefined): string | null {
+  if (!date) return null;
   try {
     const now = new Date();
     const target = new Date(date);
     const diff = target.getTime() - now.getTime();
+    
+    if (diff < 0) return "已过期";
+    
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
     
-    if (diff < 0) return "已过期";
-    if (hours < 1) return "即将到期";
-    if (hours < 24) return `${hours}h`;
+    if (hours < 1) return "即将开始";
+    if (hours < 24) return `${hours}小时后`;
     if (days === 1) return "明天";
-    if (days < 7) return `${days}天`;
-    return formatDate(date);
+    return `${days}天后`;
   } catch {
     return null;
   }
 }
 
-function TaskCard({ task, onStatusChange, onDelete }: { 
+// 状态配置
+const statusConfig: Record<TaskStatus, { label: string; icon: string; color: string; bg: string; border: string }> = {
+  active: { 
+    label: "进行中", 
+    icon: "🚀", 
+    color: "text-blue-400", 
+    bg: "bg-blue-500/10", 
+    border: "border-blue-500/20" 
+  },
+  recurring: { 
+    label: "周期任务", 
+    icon: "🔄", 
+    color: "text-purple-400", 
+    bg: "bg-purple-500/10", 
+    border: "border-purple-500/20" 
+  },
+  done: { 
+    label: "已完成", 
+    icon: "✅", 
+    color: "text-green-400", 
+    bg: "bg-green-500/10", 
+    border: "border-green-500/20" 
+  },
+  canceled: { 
+    label: "已取消", 
+    icon: "🚫", 
+    color: "text-gray-400", 
+    bg: "bg-gray-500/10", 
+    border: "border-gray-500/20" 
+  },
+};
+
+// 看板列配置
+const kanbanColumns: { id: Exclude<TaskStatus, "canceled">; title: string }[] = [
+  { id: "active", title: "进行中" },
+  { id: "recurring", title: "周期任务" },
+  { id: "done", title: "已完成" },
+];
+
+function TaskCard({ 
+  task, 
+  onStatusChange, 
+  onDelete, 
+  compact = false,
+  showTime = true,
+}: { 
   task: Task; 
   onStatusChange: (id: string, status: TaskStatus) => void;
   onDelete: (id: string) => void;
+  compact?: boolean;
+  showTime?: boolean;
 }) {
   const [isDeleting, setIsDeleting] = useState(false);
-  const nextRunTime = task.nextRunAt ? formatRelativeTime(task.nextRunAt) : null;
+  const timeLeft = formatTimeLeft(task.nextRunAt);
+  const status = statusConfig[task.status];
 
   const handleDelete = async () => {
     if (!confirm("确定删除这个任务？")) return;
@@ -70,21 +153,38 @@ function TaskCard({ task, onStatusChange, onDelete }: {
     await onDelete(task.id);
   };
 
+  const nextStatus = (current: TaskStatus): TaskStatus => {
+    const flow: Record<TaskStatus, TaskStatus> = {
+      active: "done",
+      recurring: "done",
+      done: "active",
+      canceled: "active",
+    };
+    return flow[current];
+  };
+
   return (
     <motion.div
       layout
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.9 }}
-      className="group relative bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl p-4 hover:border-slate-600/50 transition-all"
+      exit={{ opacity: 0, scale: 0.95 }}
+      className={`group relative bg-slate-800/50 backdrop-blur-sm border ${status.border} rounded-xl hover:bg-slate-800/80 transition-all ${
+        compact ? "p-3" : "p-4"
+      } ${task.status === "canceled" ? "opacity-60" : ""}`}
     >
+      {/* 状态指示器 */}
+      <div className={`absolute left-0 top-4 bottom-4 w-1 rounded-r ${status.bg.replace("/10", "")}`} />
+      
       {/* Header */}
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <h3 className="font-medium text-slate-100 line-clamp-2">{task.title}</h3>
+      <div className="flex items-start justify-between gap-2 mb-2 pl-2">
+        <h3 className={`font-medium text-slate-100 line-clamp-2 ${compact ? "text-sm" : ""}`}>
+          {task.title}
+        </h3>
         <button
           onClick={handleDelete}
           disabled={isDeleting}
-          className="opacity-0 group-hover:opacity-100 p-1 rounded-lg hover:bg-red-500/20 text-slate-500 hover:text-red-400 transition-all"
+          className="opacity-0 group-hover:opacity-100 p-1 rounded-lg hover:bg-red-500/20 text-slate-500 hover:text-red-400 transition-all shrink-0"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -92,73 +192,86 @@ function TaskCard({ task, onStatusChange, onDelete }: {
         </button>
       </div>
 
+      {/* 时间信息 */}
+      {showTime && timeLeft && task.status !== "done" && task.status !== "canceled" && (
+        <div className={`pl-2 mb-2 text-xs font-medium ${
+          timeLeft === "已过期" ? "text-red-400" : 
+          timeLeft === "即将开始" ? "text-amber-400" : "text-blue-400"
+        }`}>
+          {task.nextRunAt && (
+            <span className="inline-flex items-center gap-1">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              {formatDate(task.nextRunAt, false)} · {timeLeft}
+            </span>
+          )}
+        </div>
+      )}
+
       {/* Detail */}
-      {task.detail && (
-        <p className="text-sm text-slate-400 line-clamp-2 mb-3">{task.detail}</p>
+      {!compact && task.detail && (
+        <p className="text-sm text-slate-400 line-clamp-2 mb-3 pl-2">{task.detail}</p>
       )}
 
       {/* Meta */}
-      <div className="flex flex-wrap gap-2 mb-3">
+      <div className={`flex flex-wrap gap-1.5 mb-2 pl-2 ${compact ? "text-xs" : "text-xs"}`}>
+        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full ${status.bg} ${status.color}`}>
+          {status.icon} {status.label}
+        </span>
         {task.source === "feishu" && (
-          <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-300">
             飞书
           </span>
         )}
         {task.scheduleText && (
-          <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 truncate max-w-[120px]">
             ⏰ {task.scheduleText}
           </span>
         )}
       </div>
 
-      {/* Footer */}
-      <div className="flex items-center justify-between pt-3 border-t border-slate-700/50">
-        <span className="text-xs text-slate-500">{formatDate(task.createdAt)}</span>
+      {/* Footer Actions */}
+      <div className="flex items-center justify-between pt-2 border-t border-slate-700/30 pl-2">
+        <span className="text-xs text-slate-500">{formatDate(task.createdAt, false)}</span>
         
-        {/* Quick Actions */}
         <div className="flex gap-1">
-          {task.status !== "active" && (
-            <button
-              onClick={() => onStatusChange(task.id, "active")}
-              className="p-1.5 rounded-lg hover:bg-blue-500/20 text-slate-500 hover:text-blue-400 transition-colors"
-              title="标记进行中"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-              </svg>
-            </button>
-          )}
-          {task.status !== "recurring" && (
+          {/* 主状态切换按钮 */}
+          <button
+            onClick={() => onStatusChange(task.id, nextStatus(task.status))}
+            className={`px-2 py-1 rounded-lg text-xs font-medium transition-colors ${
+              task.status === "done" || task.status === "canceled"
+                ? "hover:bg-blue-500/20 text-slate-500 hover:text-blue-400"
+                : "hover:bg-green-500/20 text-slate-500 hover:text-green-400"
+            }`}
+            title={task.status === "done" || task.status === "canceled" ? "重新激活" : "标记完成"}
+          >
+            {task.status === "done" || task.status === "canceled" ? "↺ 重做" : "✓ 完成"}
+          </button>
+          
+          {/* 周期任务切换 */}
+          {task.status !== "recurring" && task.status !== "canceled" && (
             <button
               onClick={() => onStatusChange(task.id, "recurring")}
-              className="p-1.5 rounded-lg hover:bg-purple-500/20 text-slate-500 hover:text-purple-400 transition-colors"
-              title="标记周期"
+              className="px-2 py-1 rounded-lg text-xs font-medium hover:bg-purple-500/20 text-slate-500 hover:text-purple-400 transition-colors"
+              title="标记为周期任务"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
+              🔄
             </button>
           )}
-          {task.status !== "done" && (
+          
+          {/* 取消按钮 */}
+          {task.status !== "canceled" && task.status !== "done" && (
             <button
-              onClick={() => onStatusChange(task.id, "done")}
-              className="p-1.5 rounded-lg hover:bg-green-500/20 text-slate-500 hover:text-green-400 transition-colors"
-              title="标记完成"
+              onClick={() => onStatusChange(task.id, "canceled")}
+              className="px-2 py-1 rounded-lg text-xs font-medium hover:bg-gray-500/20 text-slate-500 hover:text-gray-400 transition-colors"
+              title="取消任务"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
+              🚫
             </button>
           )}
         </div>
       </div>
-
-      {/* Status indicator */}
-      {nextRunTime && task.status !== "done" && (
-        <div className="absolute -top-1 -right-1 px-2 py-0.5 text-xs font-medium rounded-full bg-amber-500/30 text-amber-300 border border-amber-500/30">
-          {nextRunTime}
-        </div>
-      )}
     </motion.div>
   );
 }
@@ -271,7 +384,7 @@ function AddTaskModal({ isOpen, onClose, onAdd }: {
               <button
                 type="submit"
                 disabled={!title.trim() || isSubmitting}
-                className="flex-1 px-4 py-2.5 rounded-xl bg-blue-500 text-white font-medium hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="flex-1 px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 text-white font-medium hover:from-blue-600 hover:to-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {isSubmitting ? "创建中..." : "创建任务"}
               </button>
@@ -283,11 +396,12 @@ function AddTaskModal({ isOpen, onClose, onAdd }: {
   );
 }
 
-function EmptyColumn({ icon, message }: { icon: string; message: string }) {
+function EmptyState({ icon, message, action }: { icon: string; message: string; action?: React.ReactNode }) {
   return (
-    <div className="flex flex-col items-center justify-center py-12 text-slate-500">
-      <span className="text-4xl mb-2">{icon}</span>
-      <p className="text-sm">{message}</p>
+    <div className="flex flex-col items-center justify-center py-16 text-slate-500">
+      <span className="text-5xl mb-3">{icon}</span>
+      <p className="text-sm mb-4">{message}</p>
+      {action}
     </div>
   );
 }
@@ -297,6 +411,9 @@ export default function WorklogPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("timeline");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<TaskStatus | "all">("all");
 
   const loadTasks = useCallback(async () => {
     try {
@@ -304,12 +421,6 @@ export default function WorklogPage() {
       const res = await fetch("/worklog/api/tasks", { cache: "no-store" });
       if (!res.ok) throw new Error("加载失败");
       const data = await res.json();
-      // 按下次执行时间倒序排列，最近的在前
-      data.sort((a: Task, b: Task) => {
-        const timeA = a.nextRunAt ? new Date(a.nextRunAt).getTime() : new Date(a.createdAt).getTime();
-        const timeB = b.nextRunAt ? new Date(b.nextRunAt).getTime() : new Date(b.createdAt).getTime();
-        return timeB - timeA;
-      });
       setTasks(data);
       setError("");
     } catch (e) {
@@ -370,18 +481,82 @@ export default function WorklogPage() {
     }
   };
 
-  const groupedTasks = {
-    active: tasks.filter((t) => t.status === "active"),
-    recurring: tasks.filter((t) => t.status === "recurring"),
-    done: tasks.filter((t) => t.status === "done"),
-  };
+  // 过滤和搜索
+  const filteredTasks = useMemo(() => {
+    let result = tasks;
+    
+    if (statusFilter !== "all") {
+      result = result.filter((t) => t.status === statusFilter);
+    }
+    
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter((t) => 
+        t.title.toLowerCase().includes(query) ||
+        t.detail.toLowerCase().includes(query)
+      );
+    }
+    
+    return result;
+  }, [tasks, statusFilter, searchQuery]);
 
-  const stats = {
+  // 看板分组
+  const kanbanTasks = useMemo(() => ({
+    active: filteredTasks.filter((t) => t.status === "active"),
+    recurring: filteredTasks.filter((t) => t.status === "recurring"),
+    done: filteredTasks.filter((t) => t.status === "done"),
+  }), [filteredTasks]);
+
+  // 时间线分组
+  const timelineGroups = useMemo((): TimeGroup[] => {
+    const groups: Record<string, Task[]> = {
+      "已过期": [],
+      "今天": [],
+      "明天": [],
+      "本周": [],
+      "未来": [],
+      "远期": [],
+      "未安排": [],
+    };
+    
+    filteredTasks.forEach((task) => {
+      const group = getRelativeTimeGroup(task.nextRunAt);
+      if (!groups[group]) groups[group] = [];
+      groups[group].push(task);
+    });
+    
+    // 按 nextRunAt 排序每个组内的任务
+    Object.keys(groups).forEach((key) => {
+      groups[key].sort((a, b) => {
+        const timeA = a.nextRunAt ? new Date(a.nextRunAt).getTime() : Infinity;
+        const timeB = b.nextRunAt ? new Date(b.nextRunAt).getTime() : Infinity;
+        return timeA - timeB;
+      });
+    });
+    
+    return [
+      { key: "已过期", label: "⚠️ 已过期", tasks: groups["已过期"] },
+      { key: "今天", label: "📅 今天", tasks: groups["今天"] },
+      { key: "明天", label: "🔜 明天", tasks: groups["明天"] },
+      { key: "本周", label: "📆 本周", tasks: groups["本周"] },
+      { key: "未来", label: "🔮 未来", tasks: groups["未来"] },
+      { key: "远期", label: "🗓️ 远期", tasks: groups["远期"] },
+      { key: "未安排", label: "📝 未安排时间", tasks: groups["未安排"] },
+    ].filter((g) => g.tasks.length > 0);
+  }, [filteredTasks]);
+
+  // 统计
+  const stats = useMemo(() => ({
     total: tasks.length,
-    active: groupedTasks.active.length,
-    recurring: groupedTasks.recurring.length,
-    done: groupedTasks.done.length,
-  };
+    active: tasks.filter((t) => t.status === "active").length,
+    recurring: tasks.filter((t) => t.status === "recurring").length,
+    done: tasks.filter((t) => t.status === "done").length,
+    canceled: tasks.filter((t) => t.status === "canceled").length,
+    expired: tasks.filter((t) => {
+      if (!t.nextRunAt || t.status === "done" || t.status === "canceled") return false;
+      return new Date(t.nextRunAt) < new Date();
+    }).length,
+  }), [tasks]);
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200">
@@ -394,27 +569,47 @@ export default function WorklogPage() {
       {/* Header */}
       <header className="relative z-10 border-b border-slate-800/50 backdrop-blur-sm sticky top-0 bg-slate-950/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-xl">
                 📌
               </div>
               <div>
                 <h1 className="text-xl font-bold text-slate-100">对话提醒</h1>
-                <p className="text-xs text-slate-500">管理你的周期性任务</p>
+                <p className="text-xs text-slate-500">
+                  {stats.total} 个任务 · {stats.active} 进行中 · {stats.expired > 0 && (
+                    <span className="text-red-400">{stats.expired} 已过期</span>
+                  )}
+                </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              {/* Stats pill */}
-              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900/50 border border-slate-800">
-                <span className="text-xs text-slate-400">{stats.total} 任务</span>
-                <span className="w-1 h-1 rounded-full bg-slate-600" />
-                <span className="text-xs text-blue-400">{stats.active} 进行中</span>
-                <span className="w-1 h-1 rounded-full bg-slate-600" />
-                <span className="text-xs text-purple-400">{stats.recurring} 周期</span>
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* 视图切换 */}
+              <div className="flex bg-slate-900 rounded-lg p-1">
+                <button
+                  onClick={() => setViewMode("timeline")}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                    viewMode === "timeline" 
+                      ? "bg-slate-700 text-slate-100" 
+                      : "text-slate-400 hover:text-slate-200"
+                  }`}
+                >
+                  ⏱️ 时间线
+                </button>
+                <button
+                  onClick={() => setViewMode("kanban")}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                    viewMode === "kanban" 
+                      ? "bg-slate-700 text-slate-100" 
+                      : "text-slate-400 hover:text-slate-200"
+                  }`}
+                >
+                  📋 看板
+                </button>
               </div>
 
+              {/* 刷新 */}
               <button
                 onClick={loadTasks}
                 className="p-2 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors"
@@ -425,6 +620,7 @@ export default function WorklogPage() {
                 </svg>
               </button>
 
+              {/* 新建 */}
               <button
                 onClick={() => setIsModalOpen(true)}
                 className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 text-white font-medium hover:from-blue-600 hover:to-purple-600 transition-all shadow-lg shadow-blue-500/25"
@@ -432,9 +628,37 @@ export default function WorklogPage() {
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
-                <span className="hidden sm:inline">新建任务</span>
+                <span>新建</span>
               </button>
             </div>
+          </div>
+
+          {/* 搜索和筛选 */}
+          <div className="mt-4 flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1 max-w-md">
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="搜索任务..."
+                className="w-full pl-10 pr-4 py-2 bg-slate-900 border border-slate-800 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500"
+              />
+            </div>
+            
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as TaskStatus | "all")}
+              className="px-4 py-2 bg-slate-900 border border-slate-800 rounded-xl text-sm text-slate-300 focus:outline-none focus:border-blue-500"
+            >
+              <option value="all">全部状态</option>
+              <option value="active">进行中</option>
+              <option value="recurring">周期任务</option>
+              <option value="done">已完成</option>
+              <option value="canceled">已取消</option>
+            </select>
           </div>
         </div>
       </header>
@@ -442,70 +666,115 @@ export default function WorklogPage() {
       {/* Main Content */}
       <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-6">
         {error && (
-          <div className="mb-4 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-4 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm"
+          >
             {error}
-          </div>
+          </motion.div>
         )}
 
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {[...Array(6)].map((_, i) => (
               <div key={i} className="bg-slate-900/50 border border-slate-800 rounded-xl p-4 animate-pulse">
-                <div className="h-5 w-24 bg-slate-800 rounded mb-4" />
-                <div className="h-24 bg-slate-800 rounded" />
+                <div className="h-4 w-3/4 bg-slate-800 rounded mb-3" />
+                <div className="h-3 w-1/2 bg-slate-800 rounded mb-4" />
+                <div className="h-20 bg-slate-800 rounded" />
               </div>
             ))}
           </div>
-        ) : tasks.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-24">
-            <div className="w-24 h-24 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-5xl mb-6">
-              📋
-            </div>
-            <h2 className="text-2xl font-bold text-slate-200 mb-2">还没有任务</h2>
-            <p className="text-slate-500 mb-6">点击右上角按钮创建你的第一个任务</p>
-            <button
-              onClick={() => setIsModalOpen(true)}
-              className="px-6 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 text-white font-medium hover:from-blue-600 hover:to-purple-600 transition-all"
-            >
-              创建任务
-            </button>
+        ) : filteredTasks.length === 0 ? (
+          <EmptyState 
+            icon="📋" 
+            message={searchQuery ? "没有找到匹配的任务" : "还没有任务"}
+            action={!searchQuery && (
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="px-6 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 text-white font-medium hover:from-blue-600 hover:to-purple-600 transition-all"
+              >
+                创建第一个任务
+              </button>
+            )}
+          />
+        ) : viewMode === "timeline" ? (
+          /* 时间线视图 */
+          <div className="space-y-6">
+            {timelineGroups.map((group) => (
+              <motion.section 
+                key={group.key}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="relative"
+              >
+                <div className="flex items-center gap-3 mb-3 sticky top-20 z-10">
+                  <h2 className={`text-lg font-semibold ${
+                    group.key === "已过期" ? "text-red-400" :
+                    group.key === "今天" ? "text-amber-400" :
+                    group.key === "明天" ? "text-blue-400" :
+                    "text-slate-300"
+                  }`}>
+                    {group.label}
+                  </h2>
+                  <span className="px-2 py-0.5 text-xs rounded-full bg-slate-800 text-slate-400">
+                    {group.tasks.length}
+                  </span>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  <AnimatePresence mode="popLayout">
+                    {group.tasks.map((task) => (
+                      <TaskCard
+                        key={task.id}
+                        task={task}
+                        onStatusChange={handleStatusChange}
+                        onDelete={handleDelete}
+                        compact
+                      />
+                    ))}
+                  </AnimatePresence>
+                </div>
+              </motion.section>
+            ))}
           </div>
         ) : (
+          /* 看板视图 */
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {columns.map((column) => (
-              <div key={column.id} className="flex flex-col">
-                {/* Column Header */}
-                <div className={`flex items-center justify-between mb-3 px-1`}>
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">{column.icon}</span>
-                    <span className={`font-medium ${column.color}`}>{column.title}</span>
+            {kanbanColumns.map((column) => {
+              const config = statusConfig[column.id];
+              return (
+                <div key={column.id} className="flex flex-col">
+                  <div className={`flex items-center gap-2 mb-3 px-1`}>
+                    <span className="text-lg">{config.icon}</span>
+                    <span className={`font-medium ${config.color}`}>{column.title}</span>
                     <span className="px-2 py-0.5 text-xs rounded-full bg-slate-900 text-slate-400 border border-slate-800">
-                      {groupedTasks[column.id].length}
+                      {kanbanTasks[column.id].length}
                     </span>
                   </div>
-                </div>
 
-                {/* Column Content */}
-                <div className={`flex-1 rounded-2xl ${column.bg} border p-3 min-h-[200px]`}>
-                  {groupedTasks[column.id].length === 0 ? (
-                    <EmptyColumn icon="📭" message="暂无任务" />
-                  ) : (
-                    <div className="space-y-3">
-                      <AnimatePresence mode="popLayout">
-                        {groupedTasks[column.id].map((task) => (
-                          <TaskCard
-                            key={task.id}
-                            task={task}
-                            onStatusChange={handleStatusChange}
-                            onDelete={handleDelete}
-                          />
-                        ))}
-                      </AnimatePresence>
-                    </div>
-                  )}
+                  <div className={`flex-1 rounded-2xl ${config.bg} ${config.border} border p-3 min-h-[200px]`}>
+                    {kanbanTasks[column.id].length === 0 ? (
+                      <EmptyState icon="📭" message="暂无任务" />
+                    ) : (
+                      <div className="space-y-3">
+                        <AnimatePresence mode="popLayout">
+                          {kanbanTasks[column.id].map((task) => (
+                            <TaskCard
+                              key={task.id}
+                              task={task}
+                              onStatusChange={handleStatusChange}
+                              onDelete={handleDelete}
+                              showTime={false}
+                            />
+                          ))}
+                        </AnimatePresence>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </main>
@@ -518,9 +787,10 @@ export default function WorklogPage() {
       />
 
       {/* Footer */}
-      <footer className="relative z-10 border-t border-slate-800/50 py-4 mt-8">
+      <footer className="relative z-10 border-t border-slate-800/50 py-6 mt-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 text-center text-xs text-slate-600">
-          对话提醒 · 由 OpenClaw 驱动
+          <p>对话提醒 · 由 OpenClaw 驱动</p>
+          <p className="mt-1">输入 #sync-to-log 手动同步飞书任务</p>
         </div>
       </footer>
     </div>
