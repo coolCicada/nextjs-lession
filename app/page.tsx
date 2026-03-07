@@ -106,6 +106,18 @@ const Page = () => {
               可展示的代办页面，支持飞书与网页同步
             </div>
           </div>
+          <div className='bg-indigo-50 p-6 w-full sm:w-96'>
+            <div onClick={() => router.push('/worklog')} className='text-2xl cursor-pointer hover:text-blue-300'>
+              AI Worklog
+            </div>
+            <div className='flex space-x-2 mt-2 mb-4'>
+              <div>timeline</div>
+              <div>deploy</div>
+            </div>
+            <div className="text-sm">
+              展示你在对话中给的任务和我实际执行过程
+            </div>
+          </div>
         </div>
       </main>
       <footer className='flex justify-center'>
