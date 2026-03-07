@@ -6,77 +6,30 @@ interface Todo {
   id: string;
   text: string;
   completed: boolean;
-  createdAt: string;
   source: string;
+  createdAt: string;
 }
-
-// Gist ID（需要你创建一个 Gist 并填在这里）
-const GIST_ID = "YOUR_GIST_ID_HERE";
-const GITHUB_TOKEN = "YOUR_GITHUB_TOKEN_HERE";
-
-const GIST_FILE = "todos.json";
 
 export default function TodosPage() {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [newTodo, setNewTodo] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [editing, setEditing] = useState(false);
 
   // 加载待办
   const loadTodos = async () => {
     try {
       setLoading(true);
-      const response = await fetch(
-        `https://api.github.com/gists/${GIST_ID}`
-      );
-      
-      if (!response.ok) {
-        throw new Error("无法加载待办数据");
-      }
-      
-      const data = await response.json();
-      const content = data.files[GIST_FILE]?.content;
-      
-      if (content) {
-        setTodos(JSON.parse(content));
-      } else {
-        // 初始化空文件
-        setTodos([]);
-      }
+      const res = await fetch("/todos/api/todos");
+      if (!res.ok) throw new Error("加载失败");
+      const data = await res.json();
+      setTodos(data);
       setError("");
     } catch (err) {
       console.error(err);
-      setError("加载失败，请检查配置");
+      setError("加载失败");
     } finally {
       setLoading(false);
-    }
-  };
-
-  // 保存待办
-  const saveTodos = async (newTodos: Todo[]) => {
-    try {
-      const content = JSON.stringify(newTodos, null, 2);
-      
-      await fetch(`https://api.github.com/gists/${GIST_ID}`, {
-        method: "PATCH",
-        headers: {
-          "Authorization": `token ${GITHUB_TOKEN}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          files: {
-            [GIST_FILE]: {
-              content,
-            },
-          },
-        }),
-      });
-      
-      setTodos(newTodos);
-    } catch (err) {
-      console.error(err);
-      setError("保存失败");
     }
   };
 
@@ -84,33 +37,57 @@ export default function TodosPage() {
     loadTodos();
   }, []);
 
-  const addTodo = (e: React.FormEvent) => {
+  // 添加待办
+  const addTodo = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTodo.trim()) return;
 
-    const todo: Todo = {
-      id: Date.now().toString(),
-      text: newTodo.trim(),
-      completed: false,
-      createdAt: new Date().toISOString(),
-      source: "web",
-    };
-
-    const newTodos = [todo, ...todos];
-    saveTodos(newTodos);
-    setNewTodo("");
+    try {
+      const res = await fetch("/todos/api/todos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: newTodo.trim(), source: "web" }),
+      });
+      if (!res.ok) throw new Error("添加失败");
+      
+      const todo = await res.json();
+      setTodos([todo, ...todos]);
+      setNewTodo("");
+    } catch (err) {
+      setError("添加失败");
+    }
   };
 
-  const toggleTodo = (id: string) => {
-    const newTodos = todos.map((todo) =>
-      todo.id === id ? { ...todo, completed: !todo.completed } : todo
-    );
-    saveTodos(newTodos);
+  // 切换完成状态
+  const toggleTodo = async (id: string, completed: boolean) => {
+    try {
+      await fetch("/todos/api/todos", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, completed: !completed }),
+      });
+      setTodos(
+        todos.map((t) =>
+          t.id === id ? { ...t, completed: !completed } : t
+        )
+      );
+    } catch (err) {
+      setError("更新失败");
+    }
   };
 
-  const deleteTodo = (id: string) => {
-    const newTodos = todos.filter((todo) => todo.id !== id);
-    saveTodos(newTodos);
+  // 删除待办
+  const deleteTodo = async (id: string) => {
+    try {
+      await fetch("/todos/api/todos", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      setTodos(todos.filter((t) => t.id !== id));
+    } catch (err) {
+      setError("删除失败");
+    }
   };
 
   const pendingTodos = todos.filter((t) => !t.completed);
@@ -118,16 +95,8 @@ export default function TodosPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-500">加载中...</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-red-500">{error}</div>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
+        <div className="text-gray-500 text-lg">加载中...</div>
       </div>
     );
   }
@@ -163,25 +132,31 @@ export default function TodosPage() {
           </div>
         </form>
 
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-lg text-center">
+            {error}
+          </div>
+        )}
+
         {/* 待办列表 */}
         <div className="space-y-6">
           {/* 进行中 */}
           {pendingTodos.length > 0 && (
             <div>
               <h2 className="text-lg font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
                 进行中 ({pendingTodos.length})
               </h2>
               <div className="space-y-2">
                 {pendingTodos.map((todo) => (
                   <div
                     key={todo.id}
-                    className="flex items-center gap-3 p-4 bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow"
+                    className="flex items-center gap-3 p-4 bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all"
                   >
                     <input
                       type="checkbox"
                       checked={false}
-                      onChange={() => toggleTodo(todo.id)}
+                      onChange={() => toggleTodo(todo.id, todo.completed)}
                       className="w-5 h-5 text-blue-600 rounded-lg focus:ring-blue-500 cursor-pointer"
                     />
                     <span className="flex-1 text-gray-800">{todo.text}</span>
@@ -211,12 +186,12 @@ export default function TodosPage() {
                 {completedTodos.map((todo) => (
                   <div
                     key={todo.id}
-                    className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl border border-gray-100"
+                    className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl border border-gray-100 opacity-75"
                   >
                     <input
                       type="checkbox"
                       checked={true}
-                      onChange={() => toggleTodo(todo.id)}
+                      onChange={() => toggleTodo(todo.id, todo.completed)}
                       className="w-5 h-5 text-green-600 rounded-lg focus:ring-green-500 cursor-pointer"
                     />
                     <span className="flex-1 text-gray-400 line-through">
@@ -251,9 +226,9 @@ export default function TodosPage() {
         <div className="mt-8 text-center">
           <button
             onClick={loadTodos}
-            className="text-gray-400 hover:text-gray-600 text-sm"
+            className="text-gray-400 hover:text-gray-600 text-sm px-4 py-2"
           >
-            🔄 刷新数据
+            🔄 刷新
           </button>
         </div>
       </div>
