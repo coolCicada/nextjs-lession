@@ -16,101 +16,81 @@ interface Task {
   createdAt: string;
 }
 
-type ViewMode = "timeline" | "kanban";
-
-// 状态配置
-const statusConfig: Record<TaskStatus, { label: string; icon: string; color: string; bg: string; border: string }> = {
-  active: { label: "进行中", icon: "◐", color: "text-blue-400", bg: "bg-blue-500/5", border: "border-blue-500/10" },
-  recurring: { label: "周期", icon: "◑", color: "text-purple-400", bg: "bg-purple-500/5", border: "border-purple-500/10" },
-  done: { label: "已完成", icon: "●", color: "text-emerald-400", bg: "bg-emerald-500/5", border: "border-emerald-500/10" },
-  canceled: { label: "已取消", icon: "○", color: "text-slate-500", bg: "bg-slate-500/5", border: "border-slate-500/10" },
+// 极简色彩
+const statusDot: Record<TaskStatus, string> = {
+  active: "bg-blue-400",
+  recurring: "bg-purple-400", 
+  done: "bg-emerald-400",
+  canceled: "bg-slate-600",
 };
 
-function formatDate(date: string | undefined): string {
+function formatTime(date: string | undefined): string {
   if (!date) return "";
   try {
     const d = new Date(date);
-    return d.toLocaleString("zh-CN", {
-      timeZone: "Asia/Shanghai",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    const now = new Date();
+    const beijingNow = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Shanghai" }));
+    const beijingTarget = new Date(d.toLocaleString("en-US", { timeZone: "Asia/Shanghai" }));
+    const today = new Date(beijingNow.getFullYear(), beijingNow.getMonth(), beijingNow.getDate());
+    const targetDay = new Date(beijingTarget.getFullYear(), beijingTarget.getMonth(), beijingTarget.getDate());
+    const diff = Math.floor((targetDay.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    
+    const timeStr = d.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Shanghai" });
+    
+    if (diff === 0) return `今天 ${timeStr}`;
+    if (diff === 1) return `明天 ${timeStr}`;
+    if (diff === -1) return `昨天 ${timeStr}`;
+    if (diff > 0 && diff < 7) return `${diff}天后`;
+    if (diff < 0 && diff > -7) return `${Math.abs(diff)}天前`;
+    return d.toLocaleDateString("zh-CN", { month: "short", day: "numeric", timeZone: "Asia/Shanghai" });
   } catch {
     return "";
   }
 }
 
-function getTimeGroup(date: string | undefined): string {
-  if (!date) return "未安排";
-  try {
-    const now = new Date();
-    const target = new Date(date);
-    const beijingNow = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Shanghai" }));
-    const beijingTarget = new Date(target.toLocaleString("en-US", { timeZone: "Asia/Shanghai" }));
-    const today = new Date(beijingNow.getFullYear(), beijingNow.getMonth(), beijingNow.getDate());
-    const targetDay = new Date(beijingTarget.getFullYear(), beijingTarget.getMonth(), beijingTarget.getDate());
-    const diffDays = Math.floor((targetDay.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    
-    if (diffDays < 0) return "已过期";
-    if (diffDays === 0) return "今天";
-    if (diffDays === 1) return "明天";
-    if (diffDays < 7) return "本周";
-    if (diffDays < 30) return "未来";
-    return "远期";
-  } catch {
-    return "未安排";
-  }
+function getPriority(date: string | undefined, status: TaskStatus): number {
+  if (status === "done" || status === "canceled") return 999;
+  if (!date) return 100;
+  const d = new Date(date);
+  const now = new Date();
+  const diff = d.getTime() - now.getTime();
+  if (diff < 0) return 0; // 已过期最高优先级
+  if (diff < 24 * 60 * 60 * 1000) return 1; // 24小时内
+  if (diff < 7 * 24 * 60 * 60 * 1000) return 2; // 一周内
+  return 3;
 }
 
-function TaskCard({ task, compact = false }: { task: Task; compact?: boolean }) {
-  const status = statusConfig[task.status];
-  const timeGroup = getTimeGroup(task.nextRunAt);
+function TaskItem({ task, isFirst }: { task: Task; isFirst?: boolean }) {
+  const timeStr = formatTime(task.nextRunAt);
+  const isDone = task.status === "done" || task.status === "canceled";
+  const isExpired = task.nextRunAt && new Date(task.nextRunAt) < new Date() && !isDone;
   
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      className={`group relative rounded-2xl border ${status.border} ${status.bg} p-4 hover:bg-slate-800/30 transition-colors`}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className={`group flex items-start gap-4 py-4 ${isFirst ? "" : "border-t border-slate-800/50"}`}
     >
-      {/* 状态指示条 */}
-      <div className={`absolute left-0 top-4 bottom-4 w-0.5 rounded-r ${status.color.replace("text-", "bg-")}`} />
+      {/* 状态点 */}
+      <div className={`mt-2 w-2 h-2 rounded-full ${statusDot[task.status]} ${isExpired ? "ring-2 ring-red-400/30" : ""}`} />
       
-      <div className="pl-3">
-        {/* 标题 */}
-        <h3 className={`font-medium leading-relaxed ${compact ? "text-sm" : "text-base"} ${task.status === "done" || task.status === "canceled" ? "text-slate-500 line-through" : "text-slate-200"}`}>
+      {/* 内容 */}
+      <div className="flex-1 min-w-0">
+        <p className={`text-[15px] leading-relaxed ${isDone ? "text-slate-600 line-through" : "text-slate-300"}`}>
           {task.title}
-        </h3>
-        
-        {/* 时间和标签 */}
-        <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
-          {/* 状态标签 */}
-          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full ${status.bg} ${status.color}`}>
-            <span className="text-[10px]">{status.icon}</span>
-            {status.label}
-          </span>
-          
-          {/* 时间信息 */}
-          {task.nextRunAt && task.status !== "done" && task.status !== "canceled" && (
-            <span className={`px-2 py-0.5 rounded-full ${
-              timeGroup === "已过期" ? "bg-red-500/10 text-red-400" :
-              timeGroup === "今天" ? "bg-amber-500/10 text-amber-400" :
-              "bg-slate-700/50 text-slate-400"
-            }`}>
-              {timeGroup === "今天" || timeGroup === "明天" 
-                ? `${timeGroup} ${formatDate(task.nextRunAt).split(" ")[1]}` 
-                : formatDate(task.nextRunAt)}
-            </span>
-          )}
-          
-          {/* 来源 */}
-          {task.source === "feishu" && (
-            <span className="text-slate-600">飞书</span>
-          )}
-        </div>
+        </p>
+        {timeStr && !isDone && (
+          <p className={`text-xs mt-1 ${isExpired ? "text-red-400" : "text-slate-500"}`}>
+            {timeStr}
+          </p>
+        )}
       </div>
+      
+      {/* 来源标签 */}
+      {task.source === "feishu" && (
+        <span className="text-[10px] text-slate-600 uppercase tracking-wider mt-1">飞书</span>
+      )}
     </motion.div>
   );
 }
@@ -118,8 +98,7 @@ function TaskCard({ task, compact = false }: { task: Task; compact?: boolean }) 
 export default function WorklogPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<ViewMode>("timeline");
-  const [statusFilter, setStatusFilter] = useState<TaskStatus | "all">("active");
+  const [filter, setFilter] = useState<"upcoming" | "done" | "all">("upcoming");
 
   useEffect(() => {
     fetch("/worklog/api/tasks", { cache: "no-store" })
@@ -131,182 +110,110 @@ export default function WorklogPage() {
       .catch(() => setLoading(false));
   }, []);
 
-  // 过滤
-  const filteredTasks = useMemo(() => {
+  const filtered = useMemo(() => {
     let result = tasks;
-    if (statusFilter !== "all") {
-      result = result.filter(t => t.status === statusFilter);
+    if (filter === "upcoming") {
+      result = tasks.filter(t => t.status === "active" || t.status === "recurring");
+    } else if (filter === "done") {
+      result = tasks.filter(t => t.status === "done" || t.status === "canceled");
     }
-    return result;
-  }, [tasks, statusFilter]);
-
-  // 时间线分组
-  const timelineGroups = useMemo(() => {
-    const groups: Record<string, Task[]> = { "已过期": [], "今天": [], "明天": [], "本周": [], "未来": [], "远期": [], "未安排": [] };
-    filteredTasks.forEach(task => {
-      const group = getTimeGroup(task.nextRunAt);
-      if (!groups[group]) groups[group] = [];
-      groups[group].push(task);
-    });
     
-    // 每组内按时间排序
-    Object.keys(groups).forEach(key => {
-      groups[key].sort((a, b) => {
-        const timeA = a.nextRunAt ? new Date(a.nextRunAt).getTime() : Infinity;
-        const timeB = b.nextRunAt ? new Date(b.nextRunAt).getTime() : Infinity;
-        return timeA - timeB;
-      });
+    return result.sort((a, b) => {
+      const pa = getPriority(a.nextRunAt, a.status);
+      const pb = getPriority(b.nextRunAt, b.status);
+      if (pa !== pb) return pa - pb;
+      
+      const ta = a.nextRunAt ? new Date(a.nextRunAt).getTime() : Infinity;
+      const tb = b.nextRunAt ? new Date(b.nextRunAt).getTime() : Infinity;
+      return ta - tb;
     });
-    
-    return [
-      { key: "已过期", label: "已过期", tasks: groups["已过期"] },
-      { key: "今天", label: "今天", tasks: groups["今天"] },
-      { key: "明天", label: "明天", tasks: groups["明天"] },
-      { key: "本周", label: "本周", tasks: groups["本周"] },
-      { key: "未来", label: "未来", tasks: groups["未来"] },
-      { key: "远期", label: "远期", tasks: groups["远期"] },
-      { key: "未安排", label: "未安排", tasks: groups["未安排"] },
-    ].filter(g => g.tasks.length > 0);
-  }, [filteredTasks]);
-
-  // 看板分组
-  const kanbanGroups = useMemo(() => {
-    const groups: Record<string, Task[]> = { active: [], recurring: [], done: [], canceled: [] };
-    filteredTasks.forEach(task => {
-      if (groups[task.status]) groups[task.status].push(task);
-    });
-    
-    // active 按时间排序
-    groups.active.sort((a, b) => {
-      const timeA = a.nextRunAt ? new Date(a.nextRunAt).getTime() : Infinity;
-      const timeB = b.nextRunAt ? new Date(b.nextRunAt).getTime() : Infinity;
-      return timeA - timeB;
-    });
-    
-    return [
-      { id: "active", title: "进行中", tasks: groups.active },
-      { id: "recurring", title: "周期", tasks: groups.recurring },
-      { id: "done", title: "已完成", tasks: groups.done },
-      { id: "canceled", title: "已取消", tasks: groups.canceled },
-    ].filter(g => g.tasks.length > 0);
-  }, [filteredTasks]);
+  }, [tasks, filter]);
 
   const stats = useMemo(() => ({
-    total: tasks.length,
-    active: tasks.filter(t => t.status === "active").length,
-    today: tasks.filter(t => getTimeGroup(t.nextRunAt) === "今天" && t.status === "active").length,
-    expired: tasks.filter(t => getTimeGroup(t.nextRunAt) === "已过期" && t.status === "active").length,
+    today: tasks.filter(t => {
+      if (!t.nextRunAt || t.status !== "active") return false;
+      const d = new Date(t.nextRunAt);
+      const now = new Date();
+      return d.toDateString() === now.toDateString();
+    }).length,
+    expired: tasks.filter(t => {
+      if (!t.nextRunAt || t.status !== "active") return false;
+      return new Date(t.nextRunAt) < new Date();
+    }).length,
   }), [tasks]);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <div className="text-slate-500 text-sm">加载中...</div>
+      <div className="min-h-screen bg-[#0a0a0b] flex items-center justify-center">
+        <span className="text-slate-600 text-sm">加载中</span>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-300">
+    <div className="min-h-screen bg-[#0a0a0b] text-slate-400 font-light">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-slate-950/80 backdrop-blur-xl border-b border-slate-800/50">
-        <div className="max-w-5xl mx-auto px-6 py-5">
+      <header className="sticky top-0 z-50 bg-[#0a0a0b]/80 backdrop-blur-md border-b border-slate-800/30">
+        <div className="max-w-2xl mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-light text-slate-100 tracking-tight">待办</h1>
-              <p className="text-xs text-slate-500 mt-1">
-                {stats.today > 0 && <span className="text-amber-400">{stats.today} 个今天</span>}
-                {stats.expired > 0 && <span className="text-red-400 ml-2">{stats.expired} 个已过期</span>}
-                {stats.today === 0 && stats.expired === 0 && `${stats.active} 个进行中`}
-              </p>
+              <h1 className="text-xl font-extralight text-slate-200 tracking-tight">待办</h1>
+              {stats.today > 0 ? (
+                <p className="text-xs text-amber-500/80 mt-1">{stats.today} 个今天</p>
+              ) : stats.expired > 0 ? (
+                <p className="text-xs text-red-400/80 mt-1">{stats.expired} 个已过期</p>
+              ) : (
+                <p className="text-xs text-slate-600 mt-1">{filtered.length} 个任务</p>
+              )}
             </div>
             
-            {/* 视图切换 */}
-            <div className="flex bg-slate-900 rounded-full p-1">
-              <button
-                onClick={() => setViewMode("timeline")}
-                className={`px-4 py-1.5 rounded-full text-sm transition-colors ${viewMode === "timeline" ? "bg-slate-700 text-slate-100" : "text-slate-500 hover:text-slate-300"}`}
+            {/* Filter */}
+            <div className="flex text-xs gap-4">
+              <button 
+                onClick={() => setFilter("upcoming")}
+                className={filter === "upcoming" ? "text-slate-200" : "text-slate-600 hover:text-slate-400"}
               >
-                时间线
+                待办
               </button>
-              <button
-                onClick={() => setViewMode("kanban")}
-                className={`px-4 py-1.5 rounded-full text-sm transition-colors ${viewMode === "kanban" ? "bg-slate-700 text-slate-100" : "text-slate-500 hover:text-slate-300"}`}
+              <button 
+                onClick={() => setFilter("done")}
+                className={filter === "done" ? "text-slate-200" : "text-slate-600 hover:text-slate-400"}
               >
-                看板
+                已完成
+              </button>
+              <button 
+                onClick={() => setFilter("all")}
+                className={filter === "all" ? "text-slate-200" : "text-slate-600 hover:text-slate-400"}
+              >
+                全部
               </button>
             </div>
-          </div>
-          
-          {/* 筛选 */}
-          <div className="flex gap-2 mt-4 overflow-x-auto pb-1 scrollbar-hide">
-            {(["active", "recurring", "done", "canceled", "all"] as const).map((status) => (
-              <button
-                key={status}
-                onClick={() => setStatusFilter(status)}
-                className={`px-3 py-1.5 rounded-full text-xs whitespace-nowrap transition-colors ${
-                  statusFilter === status 
-                    ? "bg-slate-700 text-slate-200" 
-                    : "text-slate-500 hover:text-slate-300 hover:bg-slate-900"
-                }`}
-              >
-                {status === "all" ? "全部" : statusConfig[status].label}
-              </button>
-            ))}
           </div>
         </div>
       </header>
 
-      {/* Content */}
-      <main className="max-w-5xl mx-auto px-6 py-8">
-        {filteredTasks.length === 0 ? (
-          <div className="text-center py-20 text-slate-600">
-            <p className="text-4xl mb-4">◌</p>
-            <p className="text-sm">暂无任务</p>
-            <p className="text-xs mt-2 opacity-60">对话中发送 #sync-to-log 同步飞书任务</p>
-          </div>
-        ) : viewMode === "timeline" ? (
-          // 时间线视图
-          <div className="space-y-8">
-            {timelineGroups.map((group) => (
-              <section key={group.key}>
-                <h2 className={`text-xs font-medium tracking-wider uppercase mb-4 ${
-                  group.key === "已过期" ? "text-red-400" :
-                  group.key === "今天" ? "text-amber-400" :
-                  "text-slate-500"
-                }`}>
-                  {group.label} · {group.tasks.length}
-                </h2>
-                <div className="space-y-2">
-                  {group.tasks.map((task) => (
-                    <TaskCard key={task.id} task={task} />
-                  ))}
-                </div>
-              </section>
-            ))}
+      {/* List */}
+      <main className="max-w-2xl mx-auto px-6 py-8">
+        {filtered.length === 0 ? (
+          <div className="text-center py-20 text-slate-700">
+            <p className="text-3xl mb-3 opacity-30">◌</p>
+            <p className="text-sm">没有任务</p>
+            <p className="text-xs mt-3 opacity-50">对话中发送 #sync-to-log 同步</p>
           </div>
         ) : (
-          // 看板视图
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {kanbanGroups.map((group) => (
-              <section key={group.id}>
-                <h2 className="text-xs font-medium tracking-wider uppercase text-slate-500 mb-4">
-                  {group.title} · {group.tasks.length}
-                </h2>
-                <div className="space-y-2">
-                  {group.tasks.map((task) => (
-                    <TaskCard key={task.id} task={task} compact />
-                  ))}
-                </div>
-              </section>
+          <div>
+            {filtered.map((task, i) => (
+              <TaskItem key={task.id} task={task} isFirst={i === 0} />
             ))}
           </div>
         )}
       </main>
 
       {/* Footer */}
-      <footer className="max-w-5xl mx-auto px-6 py-8 text-center text-xs text-slate-600">
-        <p>输入 #sync-to-log 同步 · 对话操作任务</p>
+      <footer className="max-w-2xl mx-auto px-6 py-8 text-center">
+        <p className="text-[11px] text-slate-700">
+          对话操作：完成 / 删除 / #sync-to-log
+        </p>
       </footer>
     </div>
   );
