@@ -30,9 +30,11 @@ type TimeGroup = {
 function formatDate(date: string | undefined, withTime = true) {
   if (!date) return "--";
   try {
+    // 强制按北京时间 (Asia/Shanghai) 显示
     const d = new Date(date);
     if (withTime) {
       return d.toLocaleString("zh-CN", {
+        timeZone: "Asia/Shanghai",
         month: "short",
         day: "numeric",
         hour: "2-digit",
@@ -40,6 +42,7 @@ function formatDate(date: string | undefined, withTime = true) {
       });
     }
     return d.toLocaleDateString("zh-CN", {
+      timeZone: "Asia/Shanghai",
       month: "short",
       day: "numeric",
       weekday: "short",
@@ -52,10 +55,16 @@ function formatDate(date: string | undefined, withTime = true) {
 function getRelativeTimeGroup(date: string | undefined): string {
   if (!date) return "未安排";
   try {
+    // 使用北京时间计算
     const now = new Date();
     const target = new Date(date);
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const targetDay = new Date(target.getFullYear(), target.getMonth(), target.getDate());
+    
+    // 转换为北京时间
+    const beijingNow = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Shanghai" }));
+    const beijingTarget = new Date(target.toLocaleString("en-US", { timeZone: "Asia/Shanghai" }));
+    
+    const today = new Date(beijingNow.getFullYear(), beijingNow.getMonth(), beijingNow.getDate());
+    const targetDay = new Date(beijingTarget.getFullYear(), beijingTarget.getMonth(), beijingTarget.getDate());
     
     const diffDays = Math.floor((targetDay.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
     
@@ -73,9 +82,14 @@ function getRelativeTimeGroup(date: string | undefined): string {
 function formatTimeLeft(date: string | undefined): string | null {
   if (!date) return null;
   try {
+    // 使用北京时间计算
     const now = new Date();
     const target = new Date(date);
-    const diff = target.getTime() - now.getTime();
+    
+    const beijingNow = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Shanghai" }));
+    const beijingTarget = new Date(target.toLocaleString("en-US", { timeZone: "Asia/Shanghai" }));
+    
+    const diff = beijingTarget.getTime() - beijingNow.getTime();
     
     if (diff < 0) return "已过期";
     
@@ -89,6 +103,28 @@ function formatTimeLeft(date: string | undefined): string | null {
   } catch {
     return null;
   }
+}
+
+// 格式化 scheduleText，ISO 日期转为北京时间
+function formatScheduleText(text: string): string {
+  if (!text) return "";
+  // 如果是 ISO 日期格式，转换为北京时间
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(text)) {
+    try {
+      const d = new Date(text);
+      return d.toLocaleString("zh-CN", {
+        timeZone: "Asia/Shanghai",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch {
+      return text;
+    }
+  }
+  // cron 表达式保持原样
+  return text;
 }
 
 // 状态配置
@@ -225,8 +261,8 @@ function TaskCard({
           </span>
         )}
         {task.scheduleText && (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 truncate max-w-[120px]">
-            ⏰ {task.scheduleText}
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 truncate max-w-[140px]" title={task.scheduleText}>
+            ⏰ {formatScheduleText(task.scheduleText)}
           </span>
         )}
       </div>
