@@ -1,130 +1,201 @@
 'use client';
+
 import { useRouter } from 'next/navigation';
-import Image from "next/image";
-import me from '@/public/me.png';
+import { motion } from 'framer-motion';
+
+const cards = [
+  {
+    id: 'todos',
+    title: '待办事项',
+    description: '管理你的待办清单，支持飞书同步',
+    emoji: '📝',
+    href: '/todos',
+    gradient: 'from-emerald-500 to-teal-600',
+    bgGradient: 'from-emerald-500/20 to-teal-500/10',
+  },
+  {
+    id: 'fortune',
+    title: '今日运势',
+    description: '基于生日和偏好测算今日运势',
+    emoji: '✨',
+    href: '/fortune',
+    gradient: 'from-purple-500 to-pink-500',
+    bgGradient: 'from-purple-500/20 to-pink-500/10',
+  },
+  {
+    id: 'ranking',
+    title: '排行榜',
+    description: '实时排名榜单，支持分数统计',
+    emoji: '🏆',
+    href: '/ranking',
+    gradient: 'from-amber-500 to-orange-500',
+    bgGradient: 'from-amber-500/20 to-orange-500/10',
+  },
+];
 
 const Page = () => {
   const router = useRouter();
+
   return (
-    <div className='min-h-screen flex flex-col'>
-      <main className='px-4 flex-1'>
-        <div className='mx-auto my-4  flex sm:w-96 h-12 bg-slate-200 justify-around items-center rounded-full'>
-          <span>Home</span>
-          <span>About</span>
-          <span>Projects</span>
-          <span>Skills</span>
-        </div>
-        <Image
-          className='rounded-full my-12 mx-auto'
-          src={me}
-          alt="1"
-          width={127}
-          height={127}
-        />
-        <div className='my-12'>
-          <div className='text-sm text-center'>Hi, my name is</div>
-          <div className='text-4xl text-center'>Matt</div>
-        </div>
-        <div className='flex flex-wrap justify-evenly gap-5 sm:flex-row rounded-xl overflow-hidden'>
-          <div className='bg-yellow-50 p-6 w-full sm:w-96'>
-            <div onClick={() => router.push('/oauth')} className='text-2xl cursor-pointer hover:text-blue-300'>oauth2.0</div>
-            <div className='flex space-x-2 mt-2 mb-4'>
-              <div>code</div>
-              <div>visit</div>
+    <div className="min-h-screen bg-slate-950 text-slate-200">
+      {/* 背景效果 */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl" />
+      </div>
+
+      {/* Header */}
+      <header className="relative z-10 border-b border-slate-800/50 backdrop-blur-sm sticky top-0 bg-slate-950/80">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center text-xl">
+              🚀
             </div>
-            <div className='text-sm'>
-              这是我oauth2.0的学习,来源于阮一峰老师的博客ewfwf范围分为非服务恶妇
-            </div>
-          </div>
-          <div className='bg-pink-50 p-6 w-full sm:w-96'>
-            <div onClick={() => router.push('/ui-library-doc')} className='text-2xl cursor-pointer hover:text-blue-300'>simply-ui</div>
-            <div className='flex space-x-2 mt-2 mb-4'>
-              <div>code</div>
-              <div>visit</div>
-            </div>
-            <div className="text-sm">
-              UI 组件库文档
-            </div>
-          </div>
-          <div className='bg-pink-50 p-6 w-full sm:w-96'>
-            <div onClick={() => router.push('/nick')} className='text-2xl cursor-pointer hover:text-blue-300'>
-              Nick
-            </div>
-            <div className='flex space-x-2 mt-2 mb-4'>
-              <div>code</div>
-              <div>visit</div>
-            </div>
-            <div className="text-sm">
-              nick
-            </div>
-          </div>
-          <div className='bg-pink-50 p-6 w-full sm:w-96'>
-            <div onClick={() => router.push('/login')} className='text-2xl cursor-pointer hover:text-blue-300'>
-              login
-            </div>
-            <div className='flex space-x-2 mt-2 mb-4'>
-              <div>code</div>
-              <div>visit</div>
-            </div>
-            <div className="text-sm">
-              login
-            </div>
-          </div>
-          <div className='bg-pink-50 p-6 w-full sm:w-96'>
-            <div onClick={() => router.push('/ui-library-doc')} className='text-2xl cursor-pointer hover:text-blue-300'>
-              simply-ui
-            </div>
-            <div className='flex space-x-2 mt-2 mb-4'>
-              <div>code</div>
-              <div>visit</div>
-            </div>
-            <div className="text-sm">
-              UI 组件库文档
-            </div>
-          </div>
-          <div className='bg-pink-50 p-6 w-full sm:w-96'>
-            <div onClick={() => router.push('/tailwindcss')} className='text-2xl cursor-pointer hover:text-blue-300'>
-              tailwindcss
-            </div>
-            <div className='flex space-x-2 mt-2 mb-4'>
-              <div>code</div>
-              <div>visit</div>
-            </div>
-            <div className="text-sm">
-              tailwindcss 
-            </div>
-          </div>
-          <div className='bg-green-50 p-6 w-full sm:w-96'>
-            <div onClick={() => router.push('/todos')} className='text-2xl cursor-pointer hover:text-blue-300'>
-              Todos Showcase
-            </div>
-            <div className='flex space-x-2 mt-2 mb-4'>
-              <div>web</div>
-              <div>feishu</div>
-            </div>
-            <div className="text-sm">
-              可展示的代办页面，支持飞书与网页同步
-            </div>
-          </div>
-          <div className='bg-indigo-50 p-6 w-full sm:w-96'>
-            <div onClick={() => router.push('/worklog')} className='text-2xl cursor-pointer hover:text-blue-300'>
-              AI Worklog
-            </div>
-            <div className='flex space-x-2 mt-2 mb-4'>
-              <div>timeline</div>
-              <div>deploy</div>
-            </div>
-            <div className="text-sm">
-              展示你在对话中给的任务和我实际执行过程
+            <div>
+              <h1 className="text-xl font-bold text-slate-100">工具导航</h1>
+              <p className="text-xs text-slate-500">
+                快速入口
+              </p>
             </div>
           </div>
         </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 py-8">
+        {/* 欢迎语 */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center mb-10"
+        >
+          <h2 className="text-3xl font-bold text-white mb-2">
+            欢迎使用
+          </h2>
+          <p className="text-slate-400">
+            选择一个工具开始吧
+          </p>
+        </motion.div>
+
+        {/* 导航卡片 */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {cards.map((card, index) => (
+            <motion.div
+              key={card.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+              onClick={() => router.push(card.href)}
+              className={`group relative overflow-hidden rounded-2xl cursor-pointer transition-all hover:scale-[1.02] hover:shadow-2xl ${card.bgGradient} border border-slate-800/50`}
+            >
+              {/* 渐变背景装饰 */}
+              <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${card.gradient} opacity-20 rounded-full blur-3xl transform translate-x-8 -translate-y-8 group-hover:opacity-30 transition-opacity`} />
+              
+              {/* 内容 */}
+              <div className="relative p-6 flex flex-col h-full min-h-[180px]">
+                {/* 图标 */}
+                <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${card.gradient} flex items-center justify-center text-2xl mb-4 shadow-lg`}>
+                  {card.emoji}
+                </div>
+                
+                {/* 标题 */}
+                <h3 className="text-xl font-bold text-slate-100 mb-2 group-hover:text-white transition-colors">
+                  {card.title}
+                </h3>
+                
+                {/* 描述 */}
+                <p className="text-sm text-slate-400 group-hover:text-slate-300 transition-colors flex-1">
+                  {card.description}
+                </p>
+                
+                {/* 箭头指示 */}
+                <div className="mt-4 flex items-center text-sm text-slate-500 group-hover:text-slate-300 transition-colors">
+                  <span>进入</span>
+                  <svg className="w-4 h-4 ml-1 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* 其他功能入口 (原有项目) */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="mt-16"
+        >
+          <h3 className="text-lg font-bold text-slate-300 mb-4 flex items-center gap-2">
+            <span>📁</span>
+            其他项目
+          </h3>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div 
+              onClick={() => router.push('/worklog')}
+              className="bg-slate-900/50 border border-slate-800 rounded-xl p-4 cursor-pointer hover:bg-slate-800/50 hover:border-slate-700 transition-all group"
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-xl">🤖</span>
+                <div>
+                  <p className="font-medium text-slate-200 group-hover:text-white">AI Worklog</p>
+                  <p className="text-xs text-slate-500">展示任务执行过程</p>
+                </div>
+              </div>
+            </div>
+            
+            <div 
+              onClick={() => router.push('/oauth')}
+              className="bg-slate-900/50 border border-slate-800 rounded-xl p-4 cursor-pointer hover:bg-slate-800/50 hover:border-slate-700 transition-all group"
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-xl">🔐</span>
+                <div>
+                  <p className="font-medium text-slate-200 group-hover:text-white">OAuth 2.0</p>
+                  <p className="text-xs text-slate-500">学习 OAuth 授权</p>
+                </div>
+              </div>
+            </div>
+            
+            <div 
+              onClick={() => router.push('/ui-library-doc')}
+              className="bg-slate-900/50 border border-slate-800 rounded-xl p-4 cursor-pointer hover:bg-slate-800/50 hover:border-slate-700 transition-all group"
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-xl">🎨</span>
+                <div>
+                  <p className="font-medium text-slate-200 group-hover:text-white">Simply UI</p>
+                  <p className="text-xs text-slate-500">组件库文档</p>
+                </div>
+              </div>
+            </div>
+            
+            <div 
+              onClick={() => router.push('/nick')}
+              className="bg-slate-900/50 border border-slate-800 rounded-xl p-4 cursor-pointer hover:bg-slate-800/50 hover:border-slate-700 transition-all group"
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-xl">👤</span>
+                <div>
+                  <p className="font-medium text-slate-200 group-hover:text-white">Nick</p>
+                  <p className="text-xs text-slate-500">个人页面</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
       </main>
-      <footer className='flex justify-center'>
-        <a href="https://beian.miit.gov.cn/">京ICP备19043673号-2</a>
+
+      {/* Footer */}
+      <footer className="relative z-10 border-t border-slate-800/50 py-6 mt-8">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center text-xs text-slate-600">
+          <a href="https://beian.miit.gov.cn/">京ICP备19043673号-2</a>
+        </div>
       </footer>
     </div>
   );
-}
+};
 
 export default Page;
