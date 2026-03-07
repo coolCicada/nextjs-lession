@@ -23,6 +23,7 @@ async function handleInit() {
         source VARCHAR(50) DEFAULT 'feishu',
         schedule_text VARCHAR(200) DEFAULT '',
         status VARCHAR(30) DEFAULT 'active',
+        next_run_at TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )

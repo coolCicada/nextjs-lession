@@ -15,10 +15,11 @@ export async function GET() {
         source,
         schedule_text as "scheduleText",
         status,
+        next_run_at as "nextRunAt",
         created_at as "createdAt",
         updated_at as "updatedAt"
       FROM chat_tasks
-      ORDER BY created_at DESC
+      ORDER BY COALESCE(next_run_at, created_at) DESC
       LIMIT 300
     `;
 
@@ -37,6 +38,7 @@ export async function POST(request: Request) {
       source = 'feishu',
       scheduleText = '',
       status = 'active',
+      nextRunAt = null,
     } = body || {};
 
     if (!title || typeof title !== 'string') {
@@ -44,8 +46,8 @@ export async function POST(request: Request) {
     }
 
     const { rows } = await sql`
-      INSERT INTO chat_tasks (title, detail, source, schedule_text, status)
-      VALUES (${title}, ${detail}, ${source}, ${scheduleText}, ${status})
+      INSERT INTO chat_tasks (title, detail, source, schedule_text, status, next_run_at)
+      VALUES (${title}, ${detail}, ${source}, ${scheduleText}, ${status}, ${nextRunAt})
       RETURNING
         id,
         title,
@@ -53,6 +55,7 @@ export async function POST(request: Request) {
         source,
         schedule_text as "scheduleText",
         status,
+        next_run_at as "nextRunAt",
         created_at as "createdAt",
         updated_at as "updatedAt"
     `;
@@ -66,7 +69,7 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
   try {
     const body = await request.json();
-    const { id, status, title, detail, scheduleText } = body || {};
+    const { id, status, title, detail, scheduleText, nextRunAt } = body || {};
 
     if (!id) {
       return NextResponse.json({ error: 'id is required' }, { status: 400 });
@@ -79,6 +82,7 @@ export async function PUT(request: Request) {
         title = COALESCE(${title}, title),
         detail = COALESCE(${detail}, detail),
         schedule_text = COALESCE(${scheduleText}, schedule_text),
+        next_run_at = COALESCE(${nextRunAt}, next_run_at),
         updated_at = NOW()
       WHERE id = ${id}
     `;

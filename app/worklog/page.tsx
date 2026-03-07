@@ -12,6 +12,7 @@ type Task = {
   source: "feishu" | "webchat" | string;
   scheduleText: string;
   status: TaskStatus;
+  nextRunAt?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -61,7 +62,7 @@ function TaskCard({ task, onStatusChange, onDelete }: {
   onDelete: (id: string) => void;
 }) {
   const [isDeleting, setIsDeleting] = useState(false);
-  const nextRemind = task.scheduleText ? formatRelativeTime(task.scheduleText) : null;
+  const nextRunTime = task.nextRunAt ? formatRelativeTime(task.nextRunAt) : null;
 
   const handleDelete = async () => {
     if (!confirm("确定删除这个任务？")) return;
@@ -153,9 +154,9 @@ function TaskCard({ task, onStatusChange, onDelete }: {
       </div>
 
       {/* Status indicator */}
-      {nextRemind && task.status !== "done" && (
+      {nextRunTime && task.status !== "done" && (
         <div className="absolute -top-1 -right-1 px-2 py-0.5 text-xs font-medium rounded-full bg-amber-500/30 text-amber-300 border border-amber-500/30">
-          {nextRemind}
+          {nextRunTime}
         </div>
       )}
     </motion.div>
@@ -170,6 +171,7 @@ function AddTaskModal({ isOpen, onClose, onAdd }: {
   const [title, setTitle] = useState("");
   const [detail, setDetail] = useState("");
   const [scheduleText, setScheduleText] = useState("");
+  const [nextRunAt, setNextRunAt] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -182,11 +184,13 @@ function AddTaskModal({ isOpen, onClose, onAdd }: {
       detail: detail.trim(),
       source: "webchat",
       scheduleText: scheduleText.trim(),
+      nextRunAt: nextRunAt || undefined,
       status: "active",
     });
     setTitle("");
     setDetail("");
     setScheduleText("");
+    setNextRunAt("");
     setIsSubmitting(false);
     onClose();
   };
@@ -246,6 +250,16 @@ function AddTaskModal({ isOpen, onClose, onAdd }: {
               />
             </div>
 
+            <div>
+              <label className="block text-sm font-medium text-slate-400 mb-1">下次执行时间</label>
+              <input
+                type="datetime-local"
+                value={nextRunAt}
+                onChange={(e) => setNextRunAt(e.target.value)}
+                className="w-full px-4 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-100 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
+
             <div className="flex gap-3 pt-2">
               <button
                 type="button"
@@ -290,8 +304,12 @@ export default function WorklogPage() {
       const res = await fetch("/worklog/api/tasks", { cache: "no-store" });
       if (!res.ok) throw new Error("加载失败");
       const data = await res.json();
-      // 按更新时间倒序排序，最近的在前
-      data.sort((a: Task, b: Task) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+      // 按下次执行时间倒序排列，最近的在前
+      data.sort((a: Task, b: Task) => {
+        const timeA = a.nextRunAt ? new Date(a.nextRunAt).getTime() : new Date(a.createdAt).getTime();
+        const timeB = b.nextRunAt ? new Date(b.nextRunAt).getTime() : new Date(b.createdAt).getTime();
+        return timeB - timeA;
+      });
       setTasks(data);
       setError("");
     } catch (e) {
