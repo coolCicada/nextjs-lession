@@ -15,6 +15,7 @@ export async function POST() {
 
 async function handleInit() {
   try {
+    // 创建表
     await sql`
       CREATE TABLE IF NOT EXISTS chat_tasks (
         id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -29,7 +30,14 @@ async function handleInit() {
       )
     `;
 
-    return NextResponse.json({ message: 'chat_tasks table created or exists' });
+    // 迁移：添加 next_run_at 字段（如果不存在）
+    try {
+      await sql`ALTER TABLE chat_tasks ADD COLUMN next_run_at TIMESTAMP`;
+    } catch {
+      // 字段已存在，忽略
+    }
+
+    return NextResponse.json({ message: 'chat_tasks table ready' });
   } catch (error) {
     return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
