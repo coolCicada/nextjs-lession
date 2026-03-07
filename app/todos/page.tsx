@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 interface Todo {
   id: string;
@@ -24,15 +25,54 @@ function formatDate(value: string) {
 }
 
 export default function TodosPage() {
+  const router = useRouter();
   const [todos, setTodos] = useState<Todo[]>([]);
   const [newTodo, setNewTodo] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [token, setToken] = useState<string | null>(null);
+  const [username, setUsername] = useState<string | null>(null);
+
+  useEffect(() => {
+    const t = localStorage.getItem("todos_token");
+    const u = localStorage.getItem("todos_user");
+
+    if (!t) {
+      router.replace("/todos/login");
+      return;
+    }
+
+    setToken(t);
+    setUsername(u);
+  }, [router]);
+
+  const authHeaders = token
+    ? {
+        Authorization: `Bearer ${token}`,
+      }
+    : undefined;
+
+  const handleUnauthorized = () => {
+    localStorage.removeItem("todos_token");
+    localStorage.removeItem("todos_user");
+    router.replace("/todos/login");
+  };
 
   const loadTodos = async () => {
+    if (!authHeaders) return;
+
     try {
       setLoading(true);
-      const res = await fetch("/todos/api/todos", { cache: "no-store" });
+      const res = await fetch("/todos/api/todos", {
+        cache: "no-store",
+        headers: authHeaders,
+      });
+
+      if (res.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+
       if (!res.ok) throw new Error("加载失败");
       const data = await res.json();
       setTodos(data);
@@ -46,19 +86,26 @@ export default function TodosPage() {
   };
 
   useEffect(() => {
-    loadTodos();
-  }, []);
+    if (token) loadTodos();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
 
   const addTodo = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTodo.trim()) return;
+    if (!newTodo.trim() || !authHeaders) return;
 
     try {
       const res = await fetch("/todos/api/todos", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders },
         body: JSON.stringify({ text: newTodo.trim(), source: "web" }),
       });
+
+      if (res.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+
       if (!res.ok) throw new Error("添加失败");
 
       const todo = await res.json();
@@ -72,13 +119,21 @@ export default function TodosPage() {
   };
 
   const toggleTodo = async (id: string, completed: boolean) => {
+    if (!authHeaders) return;
+
     try {
       const next = !completed;
       const res = await fetch("/todos/api/todos", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders },
         body: JSON.stringify({ id, completed: next }),
       });
+
+      if (res.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+
       if (!res.ok) throw new Error("更新失败");
 
       setTodos((prev) => prev.map((t) => (t.id === id ? { ...t, completed: next } : t)));
@@ -90,12 +145,20 @@ export default function TodosPage() {
   };
 
   const deleteTodo = async (id: string) => {
+    if (!authHeaders) return;
+
     try {
       const res = await fetch("/todos/api/todos", {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders },
         body: JSON.stringify({ id }),
       });
+
+      if (res.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+
       if (!res.ok) throw new Error("删除失败");
 
       setTodos((prev) => prev.filter((t) => t.id !== id));
@@ -104,6 +167,12 @@ export default function TodosPage() {
       console.error(err);
       setError("删除失败，请稍后重试");
     }
+  };
+
+  const logout = () => {
+    localStorage.removeItem("todos_token");
+    localStorage.removeItem("todos_user");
+    router.replace("/todos/login");
   };
 
   const stats = useMemo(() => {
@@ -129,8 +198,16 @@ export default function TodosPage() {
     <div className="min-h-screen bg-slate-50 py-8 px-4">
       <div className="mx-auto w-full max-w-3xl space-y-6">
         <section className="rounded-2xl bg-white shadow-sm border border-slate-200 p-6">
-          <h1 className="text-2xl md:text-3xl font-bold text-slate-900">✅ Todo 展示页</h1>
-          <p className="text-slate-500 mt-2">支持网页新增，也可接飞书消息同步进来。</p>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold text-slate-900">✅ Todo 展示页</h1>
+              <p className="text-slate-500 mt-2">支持网页新增，也可接飞书消息同步进来。</p>
+              {username && <p className="text-xs text-slate-400 mt-1">当前账号：{username}</p>}
+            </div>
+            <button onClick={logout} className="px-3 py-2 text-sm rounded-lg border border-slate-200 hover:bg-slate-50">
+              退出登录
+            </button>
+          </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-5">
             <div className="rounded-xl bg-slate-100 p-3">
