@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { motion } from "framer-motion";
+import Link from "next/link";
 
 type TaskStatus = "active" | "recurring" | "done" | "canceled";
 
@@ -16,12 +17,12 @@ interface Task {
   createdAt: string;
 }
 
-// 极简色彩
-const statusDot: Record<TaskStatus, string> = {
-  active: "bg-blue-400",
-  recurring: "bg-purple-400", 
-  done: "bg-emerald-400",
-  canceled: "bg-slate-600",
+// 柔和色彩
+const statusConfig: Record<TaskStatus, { dot: string; bg: string; text: string }> = {
+  active: { dot: "bg-sky-400", bg: "bg-sky-50", text: "text-sky-600" },
+  recurring: { dot: "bg-violet-400", bg: "bg-violet-50", text: "text-violet-600" },
+  done: { dot: "bg-emerald-400", bg: "bg-emerald-50", text: "text-emerald-600" },
+  canceled: { dot: "bg-slate-300", bg: "bg-slate-50", text: "text-slate-500" },
 };
 
 function formatTime(date: string | undefined): string {
@@ -54,9 +55,9 @@ function getPriority(date: string | undefined, status: TaskStatus): number {
   const d = new Date(date);
   const now = new Date();
   const diff = d.getTime() - now.getTime();
-  if (diff < 0) return 0; // 已过期最高优先级
-  if (diff < 24 * 60 * 60 * 1000) return 1; // 24小时内
-  if (diff < 7 * 24 * 60 * 60 * 1000) return 2; // 一周内
+  if (diff < 0) return 0;
+  if (diff < 24 * 60 * 60 * 1000) return 1;
+  if (diff < 7 * 24 * 60 * 60 * 1000) return 2;
   return 3;
 }
 
@@ -64,24 +65,25 @@ function TaskItem({ task, isFirst }: { task: Task; isFirst?: boolean }) {
   const timeStr = formatTime(task.nextRunAt);
   const isDone = task.status === "done" || task.status === "canceled";
   const isExpired = task.nextRunAt && new Date(task.nextRunAt) < new Date() && !isDone;
+  const config = statusConfig[task.status];
   
   return (
     <motion.div
       layout
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className={`group flex items-start gap-4 py-4 ${isFirst ? "" : "border-t border-slate-800/50"}`}
+      className={`group flex items-start gap-4 py-4 ${isFirst ? "" : "border-t border-slate-100"}`}
     >
       {/* 状态点 */}
-      <div className={`mt-2 w-2 h-2 rounded-full ${statusDot[task.status]} ${isExpired ? "ring-2 ring-red-400/30" : ""}`} />
+      <div className={`mt-2 w-2.5 h-2.5 rounded-full ${config.dot} ${isExpired ? "ring-4 ring-rose-100" : ""}`} />
       
       {/* 内容 */}
       <div className="flex-1 min-w-0">
-        <p className={`text-[15px] leading-relaxed ${isDone ? "text-slate-600 line-through" : "text-slate-300"}`}>
+        <p className={`text-[15px] leading-relaxed ${isDone ? "text-slate-400 line-through" : "text-slate-700"}`}>
           {task.title}
         </p>
         {timeStr && !isDone && (
-          <p className={`text-xs mt-1 ${isExpired ? "text-red-400" : "text-slate-500"}`}>
+          <p className={`text-xs mt-1.5 font-medium ${isExpired ? "text-rose-500" : "text-slate-400"}`}>
             {timeStr}
           </p>
         )}
@@ -89,7 +91,7 @@ function TaskItem({ task, isFirst }: { task: Task; isFirst?: boolean }) {
       
       {/* 来源标签 */}
       {task.source === "feishu" && (
-        <span className="text-[10px] text-slate-600 uppercase tracking-wider mt-1">飞书</span>
+        <span className="text-[10px] text-slate-400 bg-slate-100 px-2 py-1 rounded-full mt-1">飞书</span>
       )}
     </motion.div>
   );
@@ -144,46 +146,57 @@ export default function WorklogPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0a0a0b] flex items-center justify-center">
-        <span className="text-slate-600 text-sm">加载中</span>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-gray-50 flex items-center justify-center">
+        <span className="text-slate-400 text-sm">加载中</span>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0b] text-slate-400 font-light">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-50 text-slate-600">
+      {/* 柔和背景 */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute -top-20 -right-20 w-[400px] h-[400px] bg-sky-200/30 rounded-full blur-[80px]" />
+        <div className="absolute top-1/2 -left-20 w-[300px] h-[300px] bg-violet-200/30 rounded-full blur-[60px]" />
+      </div>
+
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-[#0a0a0b]/80 backdrop-blur-md border-b border-slate-800/30">
-        <div className="max-w-2xl mx-auto px-6 py-6">
+      <header className="relative z-10 sticky top-0 bg-white/70 backdrop-blur-xl border-b border-slate-100">
+        <div className="max-w-2xl mx-auto px-6 py-5">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-extralight text-slate-200 tracking-tight">待办</h1>
-              {stats.today > 0 ? (
-                <p className="text-xs text-amber-500/80 mt-1">{stats.today} 个今天</p>
-              ) : stats.expired > 0 ? (
-                <p className="text-xs text-red-400/80 mt-1">{stats.expired} 个已过期</p>
-              ) : (
-                <p className="text-xs text-slate-600 mt-1">{filtered.length} 个任务</p>
-              )}
+            <div className="flex items-center gap-3">
+              <Link href="/" className="w-10 h-10 rounded-2xl bg-gradient-to-br from-sky-400 to-blue-500 flex items-center justify-center text-white shadow-lg shadow-sky-200">
+                ←
+              </Link>
+              <div>
+                <h1 className="text-xl font-semibold text-slate-800">待办</h1>
+                {stats.today > 0 ? (
+                  <p className="text-xs text-amber-500 mt-0.5">{stats.today} 个今天</p>
+                ) : stats.expired > 0 ? (
+                  <p className="text-xs text-rose-500 mt-0.5">{stats.expired} 个已过期</p>
+                ) : (
+                  <p className="text-xs text-slate-400 mt-0.5">{filtered.length} 个任务</p>
+                )}
+              </div>
             </div>
             
             {/* Filter */}
-            <div className="flex text-xs gap-4">
+            <div className="flex bg-slate-100 rounded-full p-1">
               <button 
                 onClick={() => setFilter("upcoming")}
-                className={filter === "upcoming" ? "text-slate-200" : "text-slate-600 hover:text-slate-400"}
+                className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all ${filter === "upcoming" ? "bg-white text-slate-700 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
               >
                 待办
               </button>
               <button 
                 onClick={() => setFilter("done")}
-                className={filter === "done" ? "text-slate-200" : "text-slate-600 hover:text-slate-400"}
+                className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all ${filter === "done" ? "bg-white text-slate-700 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
               >
                 已完成
               </button>
               <button 
                 onClick={() => setFilter("all")}
-                className={filter === "all" ? "text-slate-200" : "text-slate-600 hover:text-slate-400"}
+                className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all ${filter === "all" ? "bg-white text-slate-700 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
               >
                 全部
               </button>
@@ -193,25 +206,27 @@ export default function WorklogPage() {
       </header>
 
       {/* List */}
-      <main className="max-w-2xl mx-auto px-6 py-8">
+      <main className="relative z-10 max-w-2xl mx-auto px-6 py-8">
         {filtered.length === 0 ? (
-          <div className="text-center py-20 text-slate-700">
-            <p className="text-3xl mb-3 opacity-30">◌</p>
-            <p className="text-sm">没有任务</p>
-            <p className="text-xs mt-3 opacity-50">对话中发送 #sync-to-log 同步</p>
+          <div className="text-center py-20">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-100 flex items-center justify-center text-2xl">◌</div>
+            <p className="text-slate-400">没有任务</p>
+            <p className="text-xs text-slate-300 mt-2">对话中发送 #sync-to-log 同步</p>
           </div>
         ) : (
-          <div>
-            {filtered.map((task, i) => (
-              <TaskItem key={task.id} task={task} isFirst={i === 0} />
-            ))}
+          <div className="bg-white/60 backdrop-blur-sm rounded-3xl border border-white/50 shadow-sm">
+            <div className="px-5 py-2">
+              {filtered.map((task, i) => (
+                <TaskItem key={task.id} task={task} isFirst={i === 0} />
+              ))}
+            </div>
           </div>
         )}
       </main>
 
       {/* Footer */}
       <footer className="max-w-2xl mx-auto px-6 py-8 text-center">
-        <p className="text-[11px] text-slate-700">
+        <p className="text-[11px] text-slate-400">
           对话操作：完成 / 删除 / #sync-to-log
         </p>
       </footer>
