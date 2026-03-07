@@ -290,6 +290,8 @@ export default function WorklogPage() {
       const res = await fetch("/worklog/api/tasks", { cache: "no-store" });
       if (!res.ok) throw new Error("加载失败");
       const data = await res.json();
+      // 按更新时间倒序排序，最近的在前
+      data.sort((a: Task, b: Task) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
       setTasks(data);
       setError("");
     } catch (e) {
