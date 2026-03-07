@@ -47,7 +47,7 @@ export async function POST(request: Request) {
 
     const { rows } = await sql`
       INSERT INTO chat_tasks (title, detail, source, schedule_text, status, next_run_at)
-      VALUES (${title}, ${detail}, ${source}, ${scheduleText}, ${status}, ${nextRunAt})
+      VALUES (${title}, ${detail}, ${source}, ${scheduleText}, ${status}, ${nextRunAt ? new Date(nextRunAt).toISOString() : null})
       RETURNING
         id,
         title,
@@ -82,7 +82,7 @@ export async function PUT(request: Request) {
         title = COALESCE(${title}, title),
         detail = COALESCE(${detail}, detail),
         schedule_text = COALESCE(${scheduleText}, schedule_text),
-        next_run_at = COALESCE(${nextRunAt}, next_run_at),
+        next_run_at = COALESCE(${nextRunAt ? new Date(nextRunAt).toISOString() : null}, next_run_at),
         updated_at = NOW()
       WHERE id = ${id}
     `;
