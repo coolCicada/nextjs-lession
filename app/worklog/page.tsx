@@ -502,7 +502,14 @@ export default function WorklogPage() {
 
   // 看板分组
   const kanbanTasks = useMemo(() => ({
-    active: filteredTasks.filter((t) => t.status === "active"),
+    active: filteredTasks
+      .filter((t) => t.status === "active")
+      .sort((a, b) => {
+        // 按 nextRunAt 从近到远排列，无时间的放最后
+        const timeA = a.nextRunAt ? new Date(a.nextRunAt).getTime() : Infinity;
+        const timeB = b.nextRunAt ? new Date(b.nextRunAt).getTime() : Infinity;
+        return timeA - timeB;
+      }),
     recurring: filteredTasks.filter((t) => t.status === "recurring"),
     done: filteredTasks.filter((t) => t.status === "done"),
   }), [filteredTasks]);
