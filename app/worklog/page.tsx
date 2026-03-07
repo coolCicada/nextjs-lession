@@ -110,8 +110,6 @@ export default function WorklogV3Page() {
 
   useEffect(() => {
     loadTasks();
-    const timer = setInterval(loadTasks, 10000);
-    return () => clearInterval(timer);
   }, []);
 
   const onStatusChange = async (id: string, status: TaskStatus) => {
@@ -142,7 +140,7 @@ export default function WorklogV3Page() {
         <section className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
           <h1 className="text-2xl md:text-3xl font-bold text-slate-900">📌 对话提醒总览（V3 动态）</h1>
           <p className="text-slate-600 mt-2">
-            现在页面数据来自数据库，不再写死。飞书/网页新增任务后可实时看到（自动刷新约 10 秒）。
+            现在页面数据来自数据库，不再写死。新增任务后点击“立即刷新”即可看到最新结果。
           </p>
 
           <div className="mt-4 flex gap-2">
