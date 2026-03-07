@@ -1,302 +1,175 @@
-'use client';
+"use client";
 
-import { useRouter } from 'next/navigation';
-import { motion, useMotionValue, useTransform, AnimatePresence } from 'framer-motion';
-import { useState, useEffect } from 'react';
+import { motion } from "framer-motion";
+import Link from "next/link";
 
-const cards = [
+const features = [
   {
-    id: 'todos',
-    title: '待办事项',
-    description: '管理你的待办清单，支持飞书同步',
-    emoji: '📝',
-    href: '/todos',
-    gradient: 'from-emerald-400 via-teal-500 to-cyan-500',
-    shadow: 'shadow-emerald-500/25',
-    iconBg: 'from-emerald-500 to-teal-600',
+    href: "/worklog",
+    title: "待办",
+    desc: "对话驱动的任务追踪",
+    icon: "◐",
+    color: "from-blue-500/20 to-cyan-500/20",
+    border: "border-blue-500/20",
+    text: "text-blue-400",
   },
   {
-    id: 'fortune',
-    title: '今日运势',
-    description: '基于生日和偏好测算今日运势',
-    emoji: '🔮',
-    href: '/fortune',
-    gradient: 'from-violet-400 via-purple-500 to-fuchsia-500',
-    shadow: 'shadow-purple-500/25',
-    iconBg: 'from-violet-500 to-purple-600',
+    href: "/ranking",
+    title: "排行",
+    desc: "实时更新的排行榜",
+    icon: "◑",
+    color: "from-amber-500/20 to-orange-500/20",
+    border: "border-amber-500/20",
+    text: "text-amber-400",
   },
   {
-    id: 'ranking',
-    title: '排行榜',
-    description: '实时排名榜单，支持分数统计',
-    emoji: '🏆',
-    href: '/ranking',
-    gradient: 'from-amber-400 via-orange-500 to-red-500',
-    shadow: 'shadow-orange-500/25',
-    iconBg: 'from-amber-500 to-orange-600',
+    href: "/todos",
+    title: "清单",
+    desc: "传统的待办列表",
+    icon: "◎",
+    color: "from-purple-500/20 to-pink-500/20",
+    border: "border-purple-500/20",
+    text: "text-purple-400",
   },
 ];
 
-const otherProjects = [
-  { id: 'worklog', title: 'AI Worklog', desc: '任务执行过程', emoji: '🤖', href: '/worklog' },
-  { id: 'oauth', title: 'OAuth 2.0', desc: '授权学习', emoji: '🔐', href: '/oauth' },
-  { id: 'ui', title: 'Simply UI', desc: '组件文档', emoji: '🎨', href: '/ui-library-doc' },
-  { id: 'nick', title: 'Nick', desc: '个人主页', emoji: '👤', href: '/nick' },
-  { id: 'login', title: 'Login', desc: '登录页面', emoji: '🔑', href: '/login' },
-  { id: 'tailwind', title: 'Tailwind', desc: '样式学习', emoji: '💨', href: '/tailwindcss' },
+const quickActions = [
+  { label: "同步飞书", cmd: "#sync-to-log", color: "text-emerald-400" },
+  { label: "查看待办", cmd: "打开待办", color: "text-blue-400" },
+  { label: "添加提醒", cmd: "提醒我...", color: "text-amber-400" },
 ];
 
-// 浮动的背景形状组件
-function FloatingShape({ delay }: { delay: number }) {
+export default function HomePage() {
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0 }}
-      animate={{ 
-        opacity: [0.3, 0.6, 0.3],
-        scale: [1, 1.2, 1],
-        x: [0, 20, 0],
-        y: [0, -20, 0],
-      }}
-      transition={{
-        duration: 6,
-        delay,
-        repeat: Infinity,
-        ease: "easeInOut",
-      }}
-      className="absolute w-20 h-20 rounded-full blur-3xl"
-      style={{
-        background: `linear-gradient(${Math.random() * 360}deg, rgba(139, 92, 246, 0.3), rgba(236, 72, 153, 0.3))`,
-      }}
-    />
-  );
-}
-
-const Page = () => {
-  const router = useRouter();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // 卡片动画变体
-  const cardVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { 
-      opacity: 1, 
-      y: 0,
-      transition: {
-        duration: 0.5,
-      },
-    },
-  };
-
-  if (!mounted) return <div className="min-h-screen bg-slate-950" />;
-
-  return (
-    <div className="min-h-screen bg-slate-950 text-white overflow-hidden relative">
+    <div className="min-h-screen bg-[#050508] text-slate-300 overflow-hidden">
       {/* 动态背景 */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        {/* 渐变网格背景 */}
-        <div 
-          className="absolute inset-0 opacity-30"
-          style={{
-            backgroundImage: `
-              linear-gradient(rgba(99, 102, 241, 0.1) 1px, transparent 1px),
-              linear-gradient(90deg, rgba(99, 102, 241, 0.1) 1px, transparent 1px)
-            `,
-            backgroundSize: '40px 40px',
-          }}
-        />
-        
-        {/* 浮动光球 */}
-        <motion.div
-          animate={{
-            background: [
-              'radial-gradient(circle at 20% 20%, rgba(139, 92, 246, 0.4), transparent 50%)',
-              'radial-gradient(circle at 80% 80%, rgba(236, 72, 153, 0.4), transparent 50%)',
-              'radial-gradient(circle at 20% 20%, rgba(139, 92, 246, 0.4), transparent 50%)',
-            ],
-          }}
-          transition={{ duration: 8, repeat: Infinity }}
-          className="absolute inset-0"
-        />
-        
-        {/* 顶部渐变光 */}
-        <div className="absolute top-0 left-0 right-0 h-64 bg-gradient-to-b from-violet-600/20 to-transparent" />
-        
-        {/* 底部渐变光 */}
-        <div className="absolute bottom-0 left-0 right-0 h-64 bg-gradient-to-t from-emerald-600/10 to-transparent" />
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-[120px] animate-pulse" />
+        <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-indigo-600/5 rounded-full blur-[150px]" />
       </div>
 
-      {/* Header */}
-      <header className="relative z-10 backdrop-blur-md bg-slate-950/50 border-b border-white/5">
-        <div className="px-4 py-4">
-          <motion.div 
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="flex items-center gap-3"
-          >
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center shadow-lg shadow-violet-500/30">
-              <span className="text-xl">🚀</span>
-            </div>
-            <div>
-              <h1 className="text-lg font-bold bg-gradient-to-r from-white to-s bg-clip-text text-transparent">
-                工具导航
-             late-400 </h1>
-            </div>
-          </motion.div>
-        </div>
-      </header>
+      {/* 网格纹理 */}
+      <div 
+        className="fixed inset-0 pointer-events-none opacity-[0.02]"
+        style={{
+          backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
+          backgroundSize: '60px 60px'
+        }}
+      />
 
-      {/* Main Content */}
-      <main className="relative z-10 px-4 py-6">
-        {/* 欢迎区域 */}
-        <motion.div
+      {/* 内容容器 */}
+      <div className="relative z-10 max-w-md mx-auto px-6 min-h-screen flex flex-col">
+        
+        {/* Header */}
+        <motion.header
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          className="pt-16 pb-12"
+        >
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-lg shadow-lg shadow-blue-500/25">
+              ◈
+            </div>
+            <h1 className="text-2xl font-light tracking-tight text-white">
+              OpenClaw
+            </h1>
+          </div>
+          <p className="text-sm text-slate-500 pl-[52px]">
+            对话驱动的智能助理
+          </p>
+        </motion.header>
+
+        {/* 主功能卡片 */}
+        <motion.section
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="mb-8 text-center"
+          transition={{ duration: 0.8, delay: 0.2 }}
+          className="space-y-3 mb-12"
         >
-          <motion.div
-            animate={{ 
-              textShadow: [
-                '0 0 20px rgba(139, 92, 246, 0.5)',
-                '0 0 40px rgba(236, 72, 153, 0.5)',
-                '0 0 20px rgba(139, 92, 246, 0.5)',
-              ],
-            }}
-            transition={{ duration: 3, repeat: Infinity }}
-            className="text-3xl font-black mb-2"
-          >
-            <span className="bg-gradient-to-r from-violet-400 via-fuchsia-400 to-amber-400 bg-clip-text text-transparent">
-              欢迎使用
-            </span>
-          </motion.div>
-          <p className="text-slate-400 text-sm">
-            选择一个工具开始探索
+          <p className="text-xs text-slate-600 uppercase tracking-wider mb-4 px-1">
+            功能
           </p>
-        </motion.div>
-
-        {/* 主入口卡片 - 毛玻璃效果 */}
-        <div className="space-y-4 mb-8">
-          {cards.map((card, index) => (
+          
+          {features.map((feature, i) => (
             <motion.div
-              key={card.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1, duration: 0.5 }}
-              onClick={() => router.push(card.href)}
-              className="group relative overflow-hidden rounded-2xl cursor-pointer active:scale-[0.98] transition-transform"
+              key={feature.href}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 + i * 0.1 }}
             >
-              {/* 背景渐变 */}
-              <div className={`absolute inset-0 bg-gradient-to-r ${card.gradient} opacity-10 group-hover:opacity-20 transition-opacity`} />
-              
-              {/* 毛玻璃层 */}
-              <div className="relative backdrop-blur-xl bg-slate-900/60 border border-white/10 rounded-2xl p-4 group-hover:border-white/20 transition-colors">
-                {/* 闪光效果 */}
-                <div className="absolute inset-0 overflow-hidden rounded-2xl">
-                  <motion.div
-                    initial={{ x: '-100%' }}
-                    whileHover={{ x: '100%' }}
-                    transition={{ duration: 0.6 }}
-                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12"
-                  />
+              <Link
+                href={feature.href}
+                className={`group flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r ${feature.color} border ${feature.border} backdrop-blur-sm transition-all active:scale-95`}
+              >
+                <span className={`text-2xl ${feature.text}`}>{feature.icon}</span>
+                <div className="flex-1">
+                  <h3 className="text-white font-medium">{feature.title}</h3>
+                  <p className="text-xs text-slate-400">{feature.desc}</p>
                 </div>
-                
-                {/* 内容 */}
-                <div className="relative flex items-center gap-4">
-                  {/* 图标 */}
-                  <motion.div
-                    whileHover={{ scale: 1.1, rotate: 5 }}
-                    className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${card.iconBg} flex items-center justify-center text-2xl shadow-lg ${card.shadow}`}
-                  >
-                    {card.emoji}
-                  </motion.div>
-                  
-                  {/* 文字 */}
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-lg font-bold text-white mb-0.5 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:bg-clip-text group-hover:from-white group-hover:to-slate-300 transition-all">
-                      {card.title}
-                    </h3>
-                    <p className="text-xs text-slate-400 group-hover:text-slate-300 transition-colors">
-                      {card.description}
-                    </p>
-                  </div>
-                  
-                  {/* 箭头 */}
-                  <motion.div
-                    animate={{ x: [0, 5, 0] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                    className="text-slate-500 group-hover:text-white transition-colors"
-                  >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </motion.div>
-                </div>
-              </div>
+                <svg 
+                  className="w-5 h-5 text-slate-600 group-hover:text-slate-400 transition-colors" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
             </motion.div>
           ))}
-        </div>
+        </motion.section>
 
-        {/* 其他项目 - 玻璃态卡片 */}
-        <motion.div
+        {/* 快捷指令 */}
+        <motion.section
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
+          transition={{ duration: 0.8, delay: 0.6 }}
+          className="mb-12"
         >
-          <h3 className="text-sm font-medium text-slate-500 mb-3 flex items-center gap-2">
-            <span className="w-1 h-1 rounded-full bg-violet-500" />
-            更多项目
-          </h3>
+          <p className="text-xs text-slate-600 uppercase tracking-wider mb-4 px-1">
+            快捷指令
+          </p>
           
-          <div className="grid grid-cols-3 gap-2">
-            {otherProjects.map((project, index) => (
+          <div className="flex flex-wrap gap-2">
+            {quickActions.map((action, i) => (
               <motion.div
-                key={project.id}
+                key={action.label}
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.5 + index * 0.05 }}
-                onClick={() => router.push(project.href)}
-                className="group bg-slate-900/40 backdrop-blur-sm border border-white/5 rounded-xl p-3 cursor-pointer active:scale-95 transition-all hover:bg-slate-800/50 hover:border-white/10"
+                transition={{ duration: 0.3, delay: 0.7 + i * 0.05 }}
+                className="px-4 py-2 rounded-full bg-slate-900/50 border border-slate-800 text-xs"
               >
-                <div className="flex flex-col items-center text-center gap-1.5">
-                  <span className="text-2xl group-hover:scale-110 transition-transform">
-                    {project.emoji}
-                  </span>
-                  <span className="text-xs font-medium text-slate-300 group-hover:text-white truncate w-full">
-                    {project.title}
-                  </span>
-                </div>
+                <span className="text-slate-500">{action.label}</span>
+                <span className={`ml-2 ${action.color}`}>{action.cmd}</span>
               </motion.div>
             ))}
           </div>
-        </motion.div>
+        </motion.section>
 
-        {/* 底部装饰 */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.8 }}
-          className="mt-10 text-center"
+        {/* 状态概览 */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.8 }}
+          className="mt-auto pb-8"
         >
-          <p className="text-xs text-slate-600">
-            Powered by Next.js
+          <div className="p-4 rounded-2xl bg-slate-900/30 border border-slate-800/50">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-slate-600">系统状态</span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-emerald-400">运行中</span>
+              </span>
+            </div>
+          </div>
+          
+          <p className="text-center text-[11px] text-slate-700 mt-6">
+            OpenClaw · 智能助理
           </p>
-        </motion.div>
-      </main>
-
-      {/* Footer */}
-      <footer className="relative z-10 py-4 mt-4">
-        <div className="text-center text-xs text-slate-700">
-          <a href="https://beian.miit.gov.cn/" className="hover:text-slate-500 transition-colors">
-            京ICP备19043673号-2
-          </a>
-        </div>
-      </footer>
+        </motion.section>
+      </div>
     </div>
   );
-};
-
-export default Page;
+}
