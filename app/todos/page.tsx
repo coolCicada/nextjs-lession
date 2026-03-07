@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useMemo, useState, useEffect } from "react";
 
 interface Todo {
   id: string;
@@ -10,24 +10,36 @@ interface Todo {
   createdAt: string;
 }
 
+function formatDate(value: string) {
+  try {
+    return new Date(value).toLocaleString("zh-CN", {
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return "--";
+  }
+}
+
 export default function TodosPage() {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [newTodo, setNewTodo] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // 加载待办
   const loadTodos = async () => {
     try {
       setLoading(true);
-      const res = await fetch("/todos/api/todos");
+      const res = await fetch("/todos/api/todos", { cache: "no-store" });
       if (!res.ok) throw new Error("加载失败");
       const data = await res.json();
       setTodos(data);
       setError("");
     } catch (err) {
       console.error(err);
-      setError("加载失败");
+      setError("加载失败，请稍后重试");
     } finally {
       setLoading(false);
     }
@@ -37,7 +49,6 @@ export default function TodosPage() {
     loadTodos();
   }, []);
 
-  // 添加待办
   const addTodo = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTodo.trim()) return;
@@ -49,124 +60,140 @@ export default function TodosPage() {
         body: JSON.stringify({ text: newTodo.trim(), source: "web" }),
       });
       if (!res.ok) throw new Error("添加失败");
-      
+
       const todo = await res.json();
-      setTodos([todo, ...todos]);
+      setTodos((prev) => [todo, ...prev]);
       setNewTodo("");
+      setError("");
     } catch (err) {
-      setError("添加失败");
+      console.error(err);
+      setError("添加失败，请稍后重试");
     }
   };
 
-  // 切换完成状态
   const toggleTodo = async (id: string, completed: boolean) => {
     try {
-      await fetch("/todos/api/todos", {
+      const next = !completed;
+      const res = await fetch("/todos/api/todos", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, completed: !completed }),
+        body: JSON.stringify({ id, completed: next }),
       });
-      setTodos(
-        todos.map((t) =>
-          t.id === id ? { ...t, completed: !completed } : t
-        )
-      );
+      if (!res.ok) throw new Error("更新失败");
+
+      setTodos((prev) => prev.map((t) => (t.id === id ? { ...t, completed: next } : t)));
+      setError("");
     } catch (err) {
-      setError("更新失败");
+      console.error(err);
+      setError("更新失败，请稍后重试");
     }
   };
 
-  // 删除待办
   const deleteTodo = async (id: string) => {
     try {
-      await fetch("/todos/api/todos", {
+      const res = await fetch("/todos/api/todos", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id }),
       });
-      setTodos(todos.filter((t) => t.id !== id));
+      if (!res.ok) throw new Error("删除失败");
+
+      setTodos((prev) => prev.filter((t) => t.id !== id));
+      setError("");
     } catch (err) {
-      setError("删除失败");
+      console.error(err);
+      setError("删除失败，请稍后重试");
     }
   };
+
+  const stats = useMemo(() => {
+    const total = todos.length;
+    const done = todos.filter((t) => t.completed).length;
+    const pending = total - done;
+    const progress = total ? Math.round((done / total) * 100) : 0;
+    return { total, done, pending, progress };
+  }, [todos]);
 
   const pendingTodos = todos.filter((t) => !t.completed);
   const completedTodos = todos.filter((t) => t.completed);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
-        <div className="text-gray-500 text-lg">加载中...</div>
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-slate-500 text-lg">正在加载待办...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 py-8">
-      <div className="max-w-2xl mx-auto px-4">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            📝 我的待办
-          </h1>
-          <p className="text-gray-500">
-            共 {todos.length} 项 · {pendingTodos.length} 进行中
-          </p>
-        </div>
+    <div className="min-h-screen bg-slate-50 py-8 px-4">
+      <div className="mx-auto w-full max-w-3xl space-y-6">
+        <section className="rounded-2xl bg-white shadow-sm border border-slate-200 p-6">
+          <h1 className="text-2xl md:text-3xl font-bold text-slate-900">✅ Todo 展示页</h1>
+          <p className="text-slate-500 mt-2">支持网页新增，也可接飞书消息同步进来。</p>
 
-        {/* 添加表单 */}
-        <form onSubmit={addTodo} className="mb-8">
-          <div className="flex gap-2">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-5">
+            <div className="rounded-xl bg-slate-100 p-3">
+              <div className="text-xs text-slate-500">总数</div>
+              <div className="text-xl font-semibold">{stats.total}</div>
+            </div>
+            <div className="rounded-xl bg-blue-50 p-3">
+              <div className="text-xs text-blue-600">进行中</div>
+              <div className="text-xl font-semibold text-blue-700">{stats.pending}</div>
+            </div>
+            <div className="rounded-xl bg-green-50 p-3">
+              <div className="text-xs text-green-600">已完成</div>
+              <div className="text-xl font-semibold text-green-700">{stats.done}</div>
+            </div>
+            <div className="rounded-xl bg-purple-50 p-3">
+              <div className="text-xs text-purple-600">完成率</div>
+              <div className="text-xl font-semibold text-purple-700">{stats.progress}%</div>
+            </div>
+          </div>
+
+          <form onSubmit={addTodo} className="mt-5 flex gap-2">
             <input
               type="text"
               value={newTodo}
               onChange={(e) => setNewTodo(e.target.value)}
-              placeholder="添加新待办..."
-              className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+              placeholder="输入新的待办事项..."
+              className="flex-1 px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <button
               type="submit"
-              className="px-6 py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors shadow-md"
+              className="px-5 py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition"
             >
               添加
             </button>
-          </div>
-        </form>
+          </form>
 
-        {error && (
-          <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-lg text-center">
-            {error}
-          </div>
-        )}
+          {error && <div className="mt-3 text-sm text-red-600">{error}</div>}
+        </section>
 
-        {/* 待办列表 */}
-        <div className="space-y-6">
-          {/* 进行中 */}
+        <section className="space-y-4">
           {pendingTodos.length > 0 && (
-            <div>
-              <h2 className="text-lg font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
-                进行中 ({pendingTodos.length})
-              </h2>
+            <div className="rounded-2xl bg-white shadow-sm border border-slate-200 p-4">
+              <h2 className="text-lg font-semibold text-slate-800 mb-3">进行中（{pendingTodos.length}）</h2>
               <div className="space-y-2">
                 {pendingTodos.map((todo) => (
                   <div
                     key={todo.id}
-                    className="flex items-center gap-3 p-4 bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all"
+                    className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 hover:border-slate-300 bg-white"
                   >
                     <input
                       type="checkbox"
                       checked={false}
                       onChange={() => toggleTodo(todo.id, todo.completed)}
-                      className="w-5 h-5 text-blue-600 rounded-lg focus:ring-blue-500 cursor-pointer"
+                      className="w-5 h-5"
                     />
-                    <span className="flex-1 text-gray-800">{todo.text}</span>
-                    <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded">
-                      {todo.source === "feishu" ? "🐙 飞书" : "🌐 网页"}
+                    <div className="flex-1">
+                      <div className="text-slate-800">{todo.text}</div>
+                      <div className="text-xs text-slate-400 mt-1">创建于 {formatDate(todo.createdAt)}</div>
+                    </div>
+                    <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded">
+                      {todo.source === "feishu" ? "飞书" : "网页"}
                     </span>
-                    <button
-                      onClick={() => deleteTodo(todo.id)}
-                      className="text-red-400 hover:text-red-600 text-sm px-2"
-                    >
+                    <button onClick={() => deleteTodo(todo.id)} className="text-red-500 text-sm hover:text-red-700">
                       删除
                     </button>
                   </div>
@@ -175,35 +202,26 @@ export default function TodosPage() {
             </div>
           )}
 
-          {/* 已完成 */}
           {completedTodos.length > 0 && (
-            <div>
-              <h2 className="text-lg font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                已完成 ({completedTodos.length})
-              </h2>
+            <div className="rounded-2xl bg-white shadow-sm border border-slate-200 p-4">
+              <h2 className="text-lg font-semibold text-slate-800 mb-3">已完成（{completedTodos.length}）</h2>
               <div className="space-y-2">
                 {completedTodos.map((todo) => (
-                  <div
-                    key={todo.id}
-                    className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl border border-gray-100 opacity-75"
-                  >
+                  <div key={todo.id} className="flex items-center gap-3 p-3 rounded-xl border border-slate-100 bg-slate-50">
                     <input
                       type="checkbox"
                       checked={true}
                       onChange={() => toggleTodo(todo.id, todo.completed)}
-                      className="w-5 h-5 text-green-600 rounded-lg focus:ring-green-500 cursor-pointer"
+                      className="w-5 h-5"
                     />
-                    <span className="flex-1 text-gray-400 line-through">
-                      {todo.text}
+                    <div className="flex-1">
+                      <div className="text-slate-500 line-through">{todo.text}</div>
+                      <div className="text-xs text-slate-400 mt-1">完成于 {formatDate(todo.createdAt)}</div>
+                    </div>
+                    <span className="text-xs text-slate-500 bg-slate-200 px-2 py-1 rounded">
+                      {todo.source === "feishu" ? "飞书" : "网页"}
                     </span>
-                    <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded">
-                      {todo.source === "feishu" ? "🐙 飞书" : "🌐 网页"}
-                    </span>
-                    <button
-                      onClick={() => deleteTodo(todo.id)}
-                      className="text-red-300 hover:text-red-500 text-sm px-2"
-                    >
+                    <button onClick={() => deleteTodo(todo.id)} className="text-red-400 text-sm hover:text-red-600">
                       删除
                     </button>
                   </div>
@@ -212,23 +230,18 @@ export default function TodosPage() {
             </div>
           )}
 
-          {/* 空状态 */}
           {todos.length === 0 && (
-            <div className="text-center py-16 bg-white rounded-2xl shadow-sm">
-              <div className="text-6xl mb-4">📋</div>
-              <p className="text-xl text-gray-600">暂无待办事项</p>
-              <p className="text-gray-400 mt-2">添加一个开始吧！</p>
+            <div className="rounded-2xl bg-white shadow-sm border border-dashed border-slate-300 p-12 text-center">
+              <div className="text-5xl mb-3">🗂️</div>
+              <div className="text-slate-700 text-lg">还没有待办事项</div>
+              <div className="text-slate-400 text-sm mt-1">现在就添加一条吧</div>
             </div>
           )}
-        </div>
+        </section>
 
-        {/* 刷新按钮 */}
-        <div className="mt-8 text-center">
-          <button
-            onClick={loadTodos}
-            className="text-gray-400 hover:text-gray-600 text-sm px-4 py-2"
-          >
-            🔄 刷新
+        <div className="text-center">
+          <button onClick={loadTodos} className="text-slate-500 hover:text-slate-700 text-sm">
+            刷新列表
           </button>
         </div>
       </div>

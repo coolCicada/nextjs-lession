@@ -1,6 +1,10 @@
 import { sql } from '@vercel/postgres';
 import { NextResponse } from 'next/server';
 
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : 'unknown error';
+}
+
 // 飞书调用接口添加待办
 export async function POST(request: Request) {
   try {
@@ -19,7 +23,7 @@ export async function POST(request: Request) {
     return NextResponse.json(rows[0]);
   } catch (error) {
     console.error('Error adding todo:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }
 
@@ -33,6 +37,6 @@ export async function GET() {
     `;
     return NextResponse.json(rows);
   } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }

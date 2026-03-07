@@ -94,6 +94,18 @@ const Page = () => {
               tailwindcss 
             </div>
           </div>
+          <div className='bg-green-50 p-6 w-full sm:w-96'>
+            <div onClick={() => router.push('/todos')} className='text-2xl cursor-pointer hover:text-blue-300'>
+              Todos Showcase
+            </div>
+            <div className='flex space-x-2 mt-2 mb-4'>
+              <div>web</div>
+              <div>feishu</div>
+            </div>
+            <div className="text-sm">
+              可展示的代办页面，支持飞书与网页同步
+            </div>
+          </div>
         </div>
       </main>
       <footer className='flex justify-center'>

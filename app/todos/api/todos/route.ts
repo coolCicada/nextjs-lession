@@ -1,6 +1,10 @@
 import { sql } from '@vercel/postgres';
 import { NextResponse } from 'next/server';
 
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : 'unknown error';
+}
+
 // 获取所有待办
 export async function GET() {
   try {
@@ -11,7 +15,7 @@ export async function GET() {
     `;
     return NextResponse.json(rows);
   } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }
 
@@ -26,7 +30,7 @@ export async function POST(request: Request) {
     `;
     return NextResponse.json(rows[0]);
   } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }
 
@@ -39,7 +43,7 @@ export async function PUT(request: Request) {
     `;
     return NextResponse.json({ success: true });
   } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }
 
@@ -50,6 +54,6 @@ export async function DELETE(request: Request) {
     await sql`DELETE FROM todos WHERE id = ${id}`;
     return NextResponse.json({ success: true });
   } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }

@@ -1,6 +1,10 @@
 import { sql } from '@vercel/postgres';
 import { NextResponse } from 'next/server';
 
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : 'unknown error';
+}
+
 // 创建表（如果不存在）
 export async function GET() {
   try {
@@ -15,6 +19,6 @@ export async function GET() {
     `;
     return NextResponse.json({ message: 'Table created or exists' });
   } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }
