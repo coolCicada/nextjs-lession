@@ -113,7 +113,7 @@ export default function LoginPage() {
 
           <div className="mt-6 text-center">
             <p className="text-xs text-slate-400">
-              默认账号：admin / admin123
+              请使用你的授权账号登录
             </p>
           </div>
         </div>
