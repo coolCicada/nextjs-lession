@@ -8,6 +8,15 @@ function getErrorMessage(error: unknown): string {
 async function ensureAuthSchema() {
   await sql`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`;
 
+  // 如果表存在但缺列，先尝试加列
+  try {
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS username VARCHAR(100) UNIQUE`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash VARCHAR(200)`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP`;
+  } catch {
+    // 表可能不存在，忽略
+  }
+
   await sql`
     CREATE TABLE IF NOT EXISTS users (
       id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
