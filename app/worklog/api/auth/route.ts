@@ -8,13 +8,21 @@ function getErrorMessage(error: unknown): string {
 async function ensureAuthSchema() {
   await sql`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`;
 
-  // 如果表存在但缺列，先尝试加列
+  // 检查现有表结构，如果列不对就删了重建
   try {
-    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS username VARCHAR(100) UNIQUE`;
-    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash VARCHAR(200)`;
-    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP`;
+    const { rows } = await sql`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'users' AND column_name = 'username'
+    `;
+    if (rows.length === 0) {
+      // 表存在但没有 username 列，删除重建
+      await sql`DROP TABLE IF EXISTS chat_tasks`;
+      await sql`DROP TABLE IF EXISTS news_entries`;
+      await sql`DROP TABLE IF EXISTS users`;
+    }
   } catch {
-    // 表可能不存在，忽略
+    // 表可能不存在，继续创建
   }
 
   await sql`
