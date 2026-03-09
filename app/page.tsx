@@ -35,10 +35,10 @@ const features = [
     shadow: "shadow-rose-100",
   },
   {
-    href: "/todos",
-    title: "清单",
-    desc: "传统的待办列表",
-    icon: "◎",
+    href: "/newslog",
+    title: "新闻库",
+    desc: "分析结果沉淀与回看",
+    icon: "◉",
     gradient: "from-violet-100 to-purple-50",
     border: "border-violet-200",
     text: "text-violet-600",
@@ -47,8 +47,8 @@ const features = [
 ];
 
 const quickActions = [
-  { label: "同步飞书", cmd: "#sync-to-log", bg: "bg-emerald-50", border: "border-emerald-200", text: "text-emerald-600" },
-  { label: "查看待办", cmd: "打开待办", bg: "bg-sky-50", border: "border-sky-200", text: "text-sky-600" },
+  { label: "同步待办", cmd: "#sync-to-log", bg: "bg-emerald-50", border: "border-emerald-200", text: "text-emerald-600" },
+  { label: "同步新闻", cmd: "#sync-news", bg: "bg-violet-50", border: "border-violet-200", text: "text-violet-600" },
   { label: "添加提醒", cmd: "提醒我...", bg: "bg-amber-50", border: "border-amber-200", text: "text-amber-600" },
 ];
 
