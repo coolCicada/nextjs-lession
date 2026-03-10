@@ -8,6 +8,7 @@
     "start": "next start",
     "seed": "node -r dotenv/config ./scripts/seed.js",
     "sync:news": "node ./scripts/sync-news-to-remote.mjs",
+    "sync:content": "node ./scripts/sync-content-records-to-remote.mjs",
     "start-80": "next start -- -p 80"
   },
   "dependencies": {
