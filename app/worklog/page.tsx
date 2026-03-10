@@ -144,6 +144,7 @@ export default function WorklogPage() {
   const router = useRouter();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<'upcoming' | 'done' | 'all'>('upcoming');
   const [user, setUser] = useState<string | null>(null);
 
@@ -173,25 +174,35 @@ export default function WorklogPage() {
     const token = localStorage.getItem('worklog_token');
     if (!token) return;
 
+    setError(null);
     fetch('/worklog/api/tasks', {
       cache: 'no-store',
       headers: { Authorization: `Bearer ${token}` },
     })
-      .then((r) => {
+      .then(async (r) => {
         if (r.status === 401) {
           clearAuth();
           router.push('/worklog/login');
           return null;
         }
-        return r.json();
+        const data = await r.json().catch(() => null);
+        if (!r.ok) {
+          throw new Error(
+            typeof data?.error === 'string' ? data.error : '任务加载失败',
+          );
+        }
+        return data;
       })
       .then((data) => {
-        if (data) {
-          setTasks(data);
-          setLoading(false);
-        }
+        if (!data) return;
+        setTasks(Array.isArray(data) ? data : []);
+        setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch((err) => {
+        setTasks([]);
+        setError(err instanceof Error ? err.message : '任务加载失败');
+        setLoading(false);
+      });
   }, [router]);
 
   const filtered = useMemo(() => {
@@ -317,6 +328,11 @@ export default function WorklogPage() {
 
       {/* List */}
       <main className="relative z-10 mx-auto max-w-2xl px-6 py-8">
+        {error && (
+          <div className="mb-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600">
+            {error}
+          </div>
+        )}
         {filtered.length === 0 ? (
           <div className="py-20 text-center">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-2xl">
