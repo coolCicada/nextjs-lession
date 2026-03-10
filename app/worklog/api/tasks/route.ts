@@ -1,12 +1,21 @@
 import { sql } from '@vercel/postgres';
 import { NextResponse } from 'next/server';
+import { getAuthUserFromHeader } from '../_lib/auth';
 
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'unknown error';
 }
 
-export async function GET() {
+// GET - 获取当前用户的任务
+export async function GET(request: Request) {
   try {
+    const user = await getAuthUserFromHeader(
+      request.headers.get('authorization'),
+    );
+    if (!user) {
+      return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+    }
+
     const { rows } = await sql`
       SELECT
         id,
@@ -19,16 +28,21 @@ export async function GET() {
         created_at as "createdAt",
         updated_at as "updatedAt"
       FROM chat_tasks
+      WHERE user_id = ${user.id}
       ORDER BY COALESCE(next_run_at, created_at) DESC
       LIMIT 300
     `;
 
     return NextResponse.json(rows);
   } catch (error) {
-    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
+    return NextResponse.json(
+      { error: getErrorMessage(error) },
+      { status: 500 },
+    );
   }
 }
 
+// POST - 创建任务（需要登录或飞书同步）
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -45,9 +59,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'title is required' }, { status: 400 });
     }
 
+    const user = await getAuthUserFromHeader(
+      request.headers.get('authorization'),
+    );
+    if (!user) {
+      return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+    }
+
     const { rows } = await sql`
-      INSERT INTO chat_tasks (title, detail, source, schedule_text, status, next_run_at)
-      VALUES (${title}, ${detail}, ${source}, ${scheduleText}, ${status}, ${nextRunAt ? new Date(nextRunAt).toISOString() : null})
+      INSERT INTO chat_tasks (user_id, title, detail, source, schedule_text, status, next_run_at)
+      VALUES (${user.id}, ${title}, ${detail}, ${source}, ${scheduleText}, ${status}, ${nextRunAt ? new Date(nextRunAt).toISOString() : null})
       RETURNING
         id,
         title,
@@ -62,10 +83,14 @@ export async function POST(request: Request) {
 
     return NextResponse.json(rows[0]);
   } catch (error) {
-    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
+    return NextResponse.json(
+      { error: getErrorMessage(error) },
+      { status: 500 },
+    );
   }
 }
 
+// PUT - 更新任务
 export async function PUT(request: Request) {
   try {
     const body = await request.json();
@@ -75,7 +100,14 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'id is required' }, { status: 400 });
     }
 
-    await sql`
+    const user = await getAuthUserFromHeader(
+      request.headers.get('authorization'),
+    );
+    if (!user) {
+      return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+    }
+
+    const { rowCount } = await sql`
       UPDATE chat_tasks
       SET
         status = COALESCE(${status}, status),
@@ -84,15 +116,23 @@ export async function PUT(request: Request) {
         schedule_text = COALESCE(${scheduleText}, schedule_text),
         next_run_at = COALESCE(${nextRunAt ? new Date(nextRunAt).toISOString() : null}, next_run_at),
         updated_at = NOW()
-      WHERE id = ${id}
+      WHERE id = ${id} AND user_id = ${user.id}
     `;
+
+    if (!rowCount) {
+      return NextResponse.json({ error: 'task not found' }, { status: 404 });
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
+    return NextResponse.json(
+      { error: getErrorMessage(error) },
+      { status: 500 },
+    );
   }
 }
 
+// DELETE - 删除任务
 export async function DELETE(request: Request) {
   try {
     const body = await request.json();
@@ -102,9 +142,24 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: 'id is required' }, { status: 400 });
     }
 
-    await sql`DELETE FROM chat_tasks WHERE id = ${id}`;
+    const user = await getAuthUserFromHeader(
+      request.headers.get('authorization'),
+    );
+    if (!user) {
+      return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+    }
+
+    const { rowCount } =
+      await sql`DELETE FROM chat_tasks WHERE id = ${id} AND user_id = ${user.id}`;
+    if (!rowCount) {
+      return NextResponse.json({ error: 'task not found' }, { status: 404 });
+    }
+
     return NextResponse.json({ success: true });
   } catch (error) {
-    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
+    return NextResponse.json(
+      { error: getErrorMessage(error) },
+      { status: 500 },
+    );
   }
 }

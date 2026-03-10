@@ -1,27 +1,22 @@
 import { sql } from '@vercel/postgres';
 import { NextResponse } from 'next/server';
+import {
+  findUserById,
+  getAuthUserFromHeader,
+  getDefaultUser,
+} from '../_lib/auth';
 
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'unknown error';
 }
 
-function getUserIdFromToken(authHeader: string | null): string | null {
-  if (!authHeader || !authHeader.startsWith('Bearer ')) return null;
-  return authHeader.slice(7);
-}
-
-async function getDefaultUserId(): Promise<string | null> {
-  const { rows } = await sql`SELECT id FROM users WHERE username = 'admin' LIMIT 1`;
-  return rows?.[0]?.id ?? null;
-}
-
 // GET - 获取当前用户新闻记录（远端 Postgres）
 export async function GET(request: Request) {
   try {
-    const authHeader = request.headers.get('authorization');
-    const userId = getUserIdFromToken(authHeader);
-
-    if (!userId) {
+    const user = await getAuthUserFromHeader(
+      request.headers.get('authorization'),
+    );
+    if (!user) {
       return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
     }
 
@@ -40,7 +35,7 @@ export async function GET(request: Request) {
             created_at as "createdAt",
             updated_at as "updatedAt"
           FROM news_entries
-          WHERE user_id = ${userId} AND record_type = ${recordType}
+          WHERE user_id = ${user.id} AND record_type = ${recordType}
           ORDER BY created_at DESC
           LIMIT 300
         `
@@ -55,14 +50,17 @@ export async function GET(request: Request) {
             created_at as "createdAt",
             updated_at as "updatedAt"
           FROM news_entries
-          WHERE user_id = ${userId}
+          WHERE user_id = ${user.id}
           ORDER BY created_at DESC
           LIMIT 300
         `;
 
     return NextResponse.json(rows);
   } catch (error) {
-    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
+    return NextResponse.json(
+      { error: getErrorMessage(error) },
+      { status: 500 },
+    );
   }
 }
 
@@ -84,21 +82,26 @@ export async function POST(request: Request) {
     }
 
     if (!content || typeof content !== 'string') {
-      return NextResponse.json({ error: 'content is required' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'content is required' },
+        { status: 400 },
+      );
     }
 
-    const authHeader = request.headers.get('authorization');
-    const tokenUserId = getUserIdFromToken(authHeader);
-    const fallbackUserId = await getDefaultUserId();
-    const userId = providedUserId || tokenUserId || fallbackUserId;
+    const authUser = await getAuthUserFromHeader(
+      request.headers.get('authorization'),
+    );
+    const bodyUser = await findUserById(providedUserId);
+    const fallbackUser = await getDefaultUser();
+    const user = authUser || bodyUser || fallbackUser;
 
-    if (!userId) {
+    if (!user) {
       return NextResponse.json({ error: 'no user found' }, { status: 400 });
     }
 
     const { rows } = await sql`
       INSERT INTO news_entries (user_id, title, content, source, synced_from, record_type)
-      VALUES (${userId}, ${title}, ${content}, ${source}, ${syncedFrom}, ${recordType})
+      VALUES (${user.id}, ${title}, ${content}, ${source}, ${syncedFrom}, ${recordType})
       RETURNING
         id,
         title,
@@ -112,6 +115,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json(rows[0]);
   } catch (error) {
-    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
+    return NextResponse.json(
+      { error: getErrorMessage(error) },
+      { status: 500 },
+    );
   }
 }
