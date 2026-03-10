@@ -25,20 +25,40 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
     }
 
-    const { rows } = await sql`
-      SELECT
-        id,
-        title,
-        content,
-        source,
-        synced_from as "syncedFrom",
-        created_at as "createdAt",
-        updated_at as "updatedAt"
-      FROM news_entries
-      WHERE user_id = ${userId}
-      ORDER BY created_at DESC
-      LIMIT 300
-    `;
+    const { searchParams } = new URL(request.url);
+    const recordType = searchParams.get('recordType');
+
+    const { rows } = recordType
+      ? await sql`
+          SELECT
+            id,
+            title,
+            content,
+            source,
+            synced_from as "syncedFrom",
+            record_type as "recordType",
+            created_at as "createdAt",
+            updated_at as "updatedAt"
+          FROM news_entries
+          WHERE user_id = ${userId} AND record_type = ${recordType}
+          ORDER BY created_at DESC
+          LIMIT 300
+        `
+      : await sql`
+          SELECT
+            id,
+            title,
+            content,
+            source,
+            synced_from as "syncedFrom",
+            record_type as "recordType",
+            created_at as "createdAt",
+            updated_at as "updatedAt"
+          FROM news_entries
+          WHERE user_id = ${userId}
+          ORDER BY created_at DESC
+          LIMIT 300
+        `;
 
     return NextResponse.json(rows);
   } catch (error) {
@@ -55,6 +75,7 @@ export async function POST(request: Request) {
       content,
       source = 'feishu',
       syncedFrom = 'sync-news',
+      recordType = 'manual-news',
       userId: providedUserId,
     } = body || {};
 
@@ -76,14 +97,15 @@ export async function POST(request: Request) {
     }
 
     const { rows } = await sql`
-      INSERT INTO news_entries (user_id, title, content, source, synced_from)
-      VALUES (${userId}, ${title}, ${content}, ${source}, ${syncedFrom})
+      INSERT INTO news_entries (user_id, title, content, source, synced_from, record_type)
+      VALUES (${userId}, ${title}, ${content}, ${source}, ${syncedFrom}, ${recordType})
       RETURNING
         id,
         title,
         content,
         source,
         synced_from as "syncedFrom",
+        record_type as "recordType",
         created_at as "createdAt",
         updated_at as "updatedAt"
     `;
