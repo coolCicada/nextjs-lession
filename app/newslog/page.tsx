@@ -85,16 +85,21 @@ export default function NewslogPage() {
         ) : (
           <div className="space-y-4">
             {items.map((item) => (
-              <div key={item.id} className="bg-white/70 border border-slate-100 rounded-2xl p-5 shadow-sm">
+              <Link
+                key={item.id}
+                href={`/newslog/${item.id}`}
+                className="block bg-white/70 border border-slate-100 rounded-2xl p-5 shadow-sm transition hover:shadow-md hover:border-sky-100"
+              >
                 <div className="flex items-center justify-between gap-4">
                   <h2 className="text-base font-medium text-slate-800">{item.title}</h2>
                   <span className="text-[11px] text-slate-400 whitespace-nowrap">{formatTime(item.createdAt)}</span>
                 </div>
-                <p className="text-sm text-slate-600 mt-3 whitespace-pre-wrap leading-6">{item.content}</p>
-                <div className="mt-3 text-[11px] text-slate-400">
-                  来源：{item.source} · 触发：{item.syncedFrom}
+                <p className="text-sm text-slate-600 mt-3 whitespace-pre-wrap leading-6 line-clamp-3">{item.content}</p>
+                <div className="mt-3 flex items-center justify-between gap-3 text-[11px] text-slate-400">
+                  <span>来源：{item.source} · 触发：{item.syncedFrom}</span>
+                  <span className="text-sky-500">查看详情 →</span>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         )}
