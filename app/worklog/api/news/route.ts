@@ -5,6 +5,7 @@ import {
   getAuthUserFromHeader,
   getDefaultUser,
 } from '../_lib/auth';
+import { ensureWorklogSchema } from '../_lib/schema';
 
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'unknown error';
@@ -13,6 +14,7 @@ function getErrorMessage(error: unknown): string {
 // GET - 获取当前用户新闻记录（远端 Postgres）
 export async function GET(request: Request) {
   try {
+    await ensureWorklogSchema();
     const user = await getAuthUserFromHeader(
       request.headers.get('authorization'),
     );
@@ -67,6 +69,7 @@ export async function GET(request: Request) {
 // POST - 创建新闻记录（远端 Postgres）
 export async function POST(request: Request) {
   try {
+    await ensureWorklogSchema();
     const body = await request.json();
     const {
       title,

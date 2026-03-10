@@ -1,6 +1,7 @@
 import { sql } from '@vercel/postgres';
 import { NextResponse } from 'next/server';
 import { getAuthUserFromHeader } from '../_lib/auth';
+import { ensureWorklogSchema } from '../_lib/schema';
 
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'unknown error';
@@ -9,6 +10,7 @@ function getErrorMessage(error: unknown): string {
 // GET - 获取当前用户的任务
 export async function GET(request: Request) {
   try {
+    await ensureWorklogSchema();
     const user = await getAuthUserFromHeader(
       request.headers.get('authorization'),
     );
@@ -45,6 +47,7 @@ export async function GET(request: Request) {
 // POST - 创建任务（需要登录或飞书同步）
 export async function POST(request: Request) {
   try {
+    await ensureWorklogSchema();
     const body = await request.json();
     const {
       title,
@@ -93,6 +96,7 @@ export async function POST(request: Request) {
 // PUT - 更新任务
 export async function PUT(request: Request) {
   try {
+    await ensureWorklogSchema();
     const body = await request.json();
     const { id, status, title, detail, scheduleText, nextRunAt } = body || {};
 
@@ -135,6 +139,7 @@ export async function PUT(request: Request) {
 // DELETE - 删除任务
 export async function DELETE(request: Request) {
   try {
+    await ensureWorklogSchema();
     const body = await request.json();
     const { id } = body || {};
 

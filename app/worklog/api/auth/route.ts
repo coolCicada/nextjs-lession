@@ -1,44 +1,13 @@
 import { sql } from '@vercel/postgres';
 import { NextResponse } from 'next/server';
+import { ensureWorklogSchema } from '../_lib/schema';
 
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'unknown error';
 }
 
 async function ensureAuthSchema() {
-  await sql`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`;
-
-  // 检查现有表结构，如果列不对就删了重建
-  try {
-    const { rows } = await sql`
-      SELECT column_name 
-      FROM information_schema.columns 
-      WHERE table_name = 'users' AND column_name = 'username'
-    `;
-    if (rows.length === 0) {
-      // 表存在但没有 username 列，删除重建
-      await sql`DROP TABLE IF EXISTS chat_tasks`;
-      await sql`DROP TABLE IF EXISTS news_entries`;
-      await sql`DROP TABLE IF EXISTS users`;
-    }
-  } catch {
-    // 表可能不存在，继续创建
-  }
-
-  await sql`
-    CREATE TABLE IF NOT EXISTS users (
-      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-      username VARCHAR(100) UNIQUE NOT NULL,
-      password_hash VARCHAR(200) NOT NULL,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )
-  `;
-
-  await sql`
-    INSERT INTO users (username, password_hash)
-    VALUES ('admin', 'admin123')
-    ON CONFLICT (username) DO NOTHING
-  `;
+  await ensureWorklogSchema();
 }
 
 export async function POST(request: Request) {
@@ -49,7 +18,10 @@ export async function POST(request: Request) {
     const { username, password } = body || {};
 
     if (!username || !password) {
-      return NextResponse.json({ error: 'username and password required' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'username and password required' },
+        { status: 400 },
+      );
     }
 
     const { rows } = await sql`
@@ -59,7 +31,10 @@ export async function POST(request: Request) {
     `;
 
     if (rows.length === 0) {
-      return NextResponse.json({ error: 'invalid credentials' }, { status: 401 });
+      return NextResponse.json(
+        { error: 'invalid credentials' },
+        { status: 401 },
+      );
     }
 
     const user = rows[0];
@@ -69,6 +44,9 @@ export async function POST(request: Request) {
       username: user.username,
     });
   } catch (error) {
-    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
+    return NextResponse.json(
+      { error: getErrorMessage(error) },
+      { status: 500 },
+    );
   }
 }
