@@ -72,7 +72,7 @@ export default function NewslogPage() {
           </Link>
           <div>
             <h1 className="text-xl font-semibold text-slate-800">新闻分析记录</h1>
-            <p className="text-xs text-slate-400 mt-0.5">对话中带上 #sync-news 可手动写入</p>
+            <p className="text-xs text-slate-400 mt-0.5">支持 #sync-news 手动写入，且每日财经简讯会自动落到本地 SQLite</p>
           </div>
         </div>
       </header>
