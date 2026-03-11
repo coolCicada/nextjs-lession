@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 type EnglishItem = {
   id: string;
@@ -89,7 +91,9 @@ export default function EnglishDetailPage() {
             <span className="text-xs text-slate-400 whitespace-nowrap">{formatTime(item.createdAt)}</span>
           </div>
           <div className="mt-4 text-xs text-slate-400">来源：{item.source} · 触发：{item.syncedFrom}</div>
-          <div className="mt-6 whitespace-pre-wrap text-[15px] leading-8 text-slate-700">{item.content}</div>
+          <div className="prose prose-slate mt-6 max-w-none prose-headings:text-slate-800 prose-p:text-slate-700 prose-li:text-slate-700 prose-strong:text-slate-800 prose-code:text-sky-700 prose-pre:bg-slate-900 prose-pre:text-slate-100">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{item.content}</ReactMarkdown>
+          </div>
         </article>
       </main>
     </div>
