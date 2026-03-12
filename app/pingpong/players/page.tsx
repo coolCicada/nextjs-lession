@@ -21,9 +21,11 @@ export default async function PlayersPage({
     typeof resolvedSearchParams?.q === 'string'
       ? resolvedSearchParams.q.trim()
       : '';
-  const playersPromise = searchPlayers(query).then((players) =>
-    players.sort((left, right) => right.totalPoints - left.totalPoints),
-  );
+  const rr = searchPlayers(query).then((players) =>
+      players.sort((left, right) => right.totalPoints - left.totalPoints)
+    )   
+  const playersPromise = new Promise((r) => setTimeout(r, 10000))
+    .then(()=> rr)
 
   return (
     <PingPongShell
