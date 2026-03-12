@@ -12,9 +12,12 @@ export const dynamic = 'force-dynamic';
 export default async function PlayersPage({
   searchParams,
 }: {
-  searchParams?: { q?: string };
+  searchParams?: Promise<{ q?: string | string[] }>;
 }) {
-  const query = searchParams?.q?.trim() ?? '';
+  const resolvedSearchParams = await searchParams;
+  const query = typeof resolvedSearchParams?.q === 'string'
+    ? resolvedSearchParams.q.trim()
+    : '';
   const filteredPlayers = (await searchPlayers(query)).sort(
     (left, right) => right.totalPoints - left.totalPoints,
   );

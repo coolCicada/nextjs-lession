@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const withMDX = require('@next/mdx')();
 const nextConfig = {
+  outputFileTracingRoot: __dirname,
   images: {
     disableStaticImages: true, // 禁用静态图像优化
   },

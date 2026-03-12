@@ -21,9 +21,12 @@ export const dynamic = 'force-dynamic';
 export default async function PingPongPage({
   searchParams,
 }: {
-  searchParams?: { q?: string };
+  searchParams?: Promise<{ q?: string | string[] }>;
 }) {
-  const query = searchParams?.q?.trim() ?? '';
+  const resolvedSearchParams = await searchParams;
+  const query = typeof resolvedSearchParams?.q === 'string'
+    ? resolvedSearchParams.q.trim()
+    : '';
   const [filteredTournaments, allTournaments, allPlayers, recentMatches] = await Promise.all([
     searchTournaments(query),
     searchTournaments(''),
