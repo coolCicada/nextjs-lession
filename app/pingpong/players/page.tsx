@@ -9,7 +9,7 @@ import { searchPlayers } from '@/app/pingpong/_lib/db';
 import PlayersResults from '@/app/pingpong/players/_components/players-results';
 import { GlassPanel } from '@/app/ui/app-shell';
 
-export const dynamic = 'force-dynamic';
+// export const dynamic = 'force-dynamic';
 
 export default async function PlayersPage({
   searchParams,
