@@ -11,7 +11,10 @@ import {
 import { TournamentJoinCard } from '@/app/pingpong/_components/tournament-join-card';
 import {
   PINGPONG_REGISTRANT_COOKIE,
+  PINGPONG_SESSION_COOKIE,
   getPlayerById,
+  getPingPongUserBySessionToken,
+  getRegistrationForPingPongUser,
   getRegistrationForRegistrant,
   getTournamentById,
   getTournamentRecentRegistrations,
@@ -39,12 +42,20 @@ export default async function TournamentDetailPage({
   }
 
   const registrantKey = cookieStore.get(PINGPONG_REGISTRANT_COOKIE)?.value;
+  const currentUser = await getPingPongUserBySessionToken(
+    cookieStore.get(PINGPONG_SESSION_COOKIE)?.value,
+  );
   const participants = tournament.participants.filter(
-    (participant): participant is typeof participant & { player: NonNullable<typeof participant.player> } =>
-      Boolean(participant.player),
+    (
+      participant,
+    ): participant is typeof participant & {
+      player: NonNullable<typeof participant.player>;
+    } => Boolean(participant.player),
   );
   const [registration, recentRegistrations] = await Promise.all([
-    getRegistrationForRegistrant(tournament.id, registrantKey),
+    currentUser
+      ? getRegistrationForPingPongUser(tournament.id, currentUser.id)
+      : getRegistrationForRegistrant(tournament.id, registrantKey),
     getTournamentRecentRegistrations(tournament.id, 5),
   ]);
   const featuredPlayer = participants[0]
@@ -90,6 +101,7 @@ export default async function TournamentDetailPage({
             registration={registration}
             hasRecentRegistrations={recentRegistrations.length > 0}
             justRegistered={resolvedSearchParams?.registered === '1'}
+            currentUser={currentUser}
           />
         </div>
 
@@ -168,8 +180,14 @@ export default async function TournamentDetailPage({
                 {featuredPlayer.bio}
               </p>
               <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                <DetailChip label="等级分" value={String(featuredPlayer.currentRating)} />
-                <DetailChip label="积分" value={String(featuredPlayer.totalPoints)} />
+                <DetailChip
+                  label="等级分"
+                  value={String(featuredPlayer.currentRating)}
+                />
+                <DetailChip
+                  label="积分"
+                  value={String(featuredPlayer.totalPoints)}
+                />
                 <DetailChip label="俱乐部" value={featuredPlayer.club} />
                 <DetailChip label="打法" value={featuredPlayer.style} />
               </div>

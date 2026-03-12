@@ -1,5 +1,7 @@
 import 'server-only';
 
+import { createHash, randomBytes } from 'node:crypto';
+
 import { sql } from '@vercel/postgres';
 
 import {
@@ -14,6 +16,9 @@ import {
 } from '@/app/pingpong/data';
 
 export const PINGPONG_REGISTRANT_COOKIE = 'oc-pingpong-registrant';
+export const PINGPONG_SESSION_COOKIE = 'oc-pingpong-session';
+
+const PINGPONG_SESSION_MAX_AGE = 60 * 60 * 24 * 30;
 
 let pingPongInitPromise: Promise<void> | null = null;
 
@@ -87,12 +92,58 @@ type MatchRow = {
   sort_order: number;
 };
 
+type PingPongUserRow = {
+  id: string;
+  name: string;
+  city: string;
+  club: string;
+  email: string | null;
+  phone: string | null;
+  created_at: Date | string;
+  updated_at: Date | string;
+};
+
+type PingPongUserProfile = {
+  id: string;
+  name: string;
+  city: string;
+  club: string;
+  email: string | null;
+  phone: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type PingPongRegisterResult =
+  | {
+      ok: true;
+      sessionToken: string;
+      user: PingPongUserProfile;
+    }
+  | {
+      ok: false;
+      code: 'identifier_exists';
+    };
+
+type PingPongLoginResult =
+  | {
+      ok: true;
+      sessionToken: string;
+      user: PingPongUserProfile;
+    }
+  | {
+      ok: false;
+      code: 'invalid_credentials';
+    };
+
 export function ensurePingPongReady() {
   if (!pingPongInitPromise) {
-    pingPongInitPromise = ensurePingPongSchema().then(seedPingPongData).catch((error) => {
-      pingPongInitPromise = null;
-      throw error;
-    });
+    pingPongInitPromise = ensurePingPongSchema()
+      .then(seedPingPongData)
+      .catch((error) => {
+        pingPongInitPromise = null;
+        throw error;
+      });
   }
 
   return pingPongInitPromise;
@@ -100,6 +151,153 @@ export function ensurePingPongReady() {
 
 export function buildRegistrantKey(playerName: string, city: string) {
   return `${normalizeRegistrantPart(playerName)}::${normalizeRegistrantPart(city)}`;
+}
+
+export function getPingPongSessionMaxAge() {
+  return PINGPONG_SESSION_MAX_AGE;
+}
+
+export async function registerPingPongUser(input: {
+  name: string;
+  city: string;
+  club?: string;
+  email?: string;
+  phone?: string;
+}): Promise<PingPongRegisterResult> {
+  await ensurePingPongReady();
+
+  const name = input.name.trim();
+  const city = input.city.trim();
+  const club = input.club?.trim() ?? '';
+  const email = normalizeOptionalEmail(input.email);
+  const phone = normalizeOptionalPhone(input.phone);
+
+  const existingUser = email
+    ? await findPingPongUserByEmail(email)
+    : phone
+      ? await findPingPongUserByPhone(phone)
+      : null;
+
+  if (existingUser) {
+    return {
+      ok: false,
+      code: 'identifier_exists',
+    };
+  }
+
+  const { rows } = await sql<PingPongUserRow>`
+    INSERT INTO pingpong_users (
+      name,
+      city,
+      club,
+      email,
+      phone
+    )
+    VALUES (
+      ${name},
+      ${city},
+      ${club},
+      ${email},
+      ${phone}
+    )
+    RETURNING
+      id,
+      name,
+      city,
+      club,
+      email,
+      phone,
+      created_at,
+      updated_at
+  `;
+
+  const user = mapPingPongUser(rows[0]);
+  const sessionToken = await createPingPongSession(user.id);
+
+  await linkRegistrationsToPingPongUser(user.id, user.name, user.city);
+
+  return {
+    ok: true,
+    sessionToken,
+    user,
+  };
+}
+
+export async function loginPingPongUser(input: {
+  name: string;
+  identifier: string;
+}): Promise<PingPongLoginResult> {
+  await ensurePingPongReady();
+
+  const name = normalizeRegistrantPart(input.name);
+  const identifier = input.identifier.trim();
+  const email = normalizeOptionalEmail(identifier);
+  const phone = email ? '' : normalizeOptionalPhone(identifier);
+
+  const user = email
+    ? await findPingPongUserForLoginByEmail(name, email)
+    : phone
+      ? await findPingPongUserForLoginByPhone(name, phone)
+      : null;
+
+  if (!user) {
+    return {
+      ok: false,
+      code: 'invalid_credentials',
+    };
+  }
+
+  const sessionToken = await createPingPongSession(user.id);
+
+  await linkRegistrationsToPingPongUser(user.id, user.name, user.city);
+
+  return {
+    ok: true,
+    sessionToken,
+    user,
+  };
+}
+
+export async function getPingPongUserBySessionToken(sessionToken?: string) {
+  if (!sessionToken) {
+    return null;
+  }
+
+  await ensurePingPongReady();
+
+  const { rows } = await sql<PingPongUserRow>`
+    SELECT
+      u.id,
+      u.name,
+      u.city,
+      u.club,
+      u.email,
+      u.phone,
+      u.created_at,
+      u.updated_at
+    FROM pingpong_sessions s
+    INNER JOIN pingpong_users u
+      ON u.id = s.user_id
+    WHERE s.session_token_hash = ${hashPingPongSessionToken(sessionToken)}
+      AND s.expires_at > CURRENT_TIMESTAMP
+    ORDER BY s.created_at DESC
+    LIMIT 1
+  `;
+
+  return rows[0] ? mapPingPongUser(rows[0]) : null;
+}
+
+export async function deletePingPongSession(sessionToken?: string) {
+  if (!sessionToken) {
+    return;
+  }
+
+  await ensurePingPongReady();
+
+  await sql`
+    DELETE FROM pingpong_sessions
+    WHERE session_token_hash = ${hashPingPongSessionToken(sessionToken)}
+  `;
 }
 
 export async function searchPlayers(query: string) {
@@ -161,7 +359,9 @@ export async function getRecentMatches(limit = 6) {
 export async function getPlayerTournaments(playerId: string) {
   const tournaments = await fetchAllTournaments();
   return tournaments.filter((tournament) =>
-    tournament.participants.some((participant) => participant.playerId === playerId),
+    tournament.participants.some(
+      (participant) => participant.playerId === playerId,
+    ),
   );
 }
 
@@ -294,11 +494,98 @@ export async function getMyRegistrations(registrantKey?: string) {
   }));
 }
 
+export async function getMyRegistrationsForUser(userId: string) {
+  await ensurePingPongReady();
+
+  const { rows } = await sql<
+    RegistrationRow & {
+      tournament_title: string;
+      tournament_date: Date | string;
+      tournament_city: string;
+    }
+  >`
+    SELECT
+      r.id,
+      r.tournament_id,
+      r.player_id,
+      r.registrant_name,
+      r.registrant_city,
+      r.note,
+      r.seed,
+      r.status,
+      r.source,
+      r.created_at,
+      r.updated_at,
+      t.title AS tournament_title,
+      t.date AS tournament_date,
+      t.city AS tournament_city
+    FROM pingpong_registrations r
+    INNER JOIN pingpong_tournaments t
+      ON t.id = r.tournament_id
+    WHERE r.pingpong_user_id = ${userId}
+    ORDER BY t.date DESC, r.updated_at DESC
+  `;
+
+  return rows.map((row) => ({
+    id: row.id,
+    tournamentId: row.tournament_id,
+    tournamentTitle: row.tournament_title,
+    tournamentDate: formatDateOnly(row.tournament_date),
+    tournamentCity: row.tournament_city,
+    playerName: row.registrant_name,
+    city: row.registrant_city,
+    note: row.note,
+    status: row.status,
+    source: row.source,
+    createdAt: formatDateTime(row.created_at),
+    updatedAt: formatDateTime(row.updated_at),
+  }));
+}
+
+export async function getRegistrationForPingPongUser(
+  tournamentId: string,
+  userId?: string,
+) {
+  if (!userId) {
+    return null;
+  }
+
+  await ensurePingPongReady();
+
+  const { rows } = await sql<RegistrationRow>`
+    SELECT
+      id,
+      tournament_id,
+      player_id,
+      registrant_name,
+      registrant_city,
+      note,
+      seed,
+      status,
+      source,
+      created_at,
+      updated_at
+    FROM pingpong_registrations
+    WHERE tournament_id = ${tournamentId}
+      AND pingpong_user_id = ${userId}
+    ORDER BY updated_at DESC
+    LIMIT 1
+  `;
+
+  const tournament = await getTournamentById(tournamentId);
+  if (!rows[0] || !tournament) {
+    return null;
+  }
+
+  return mapRegistrationRecord(rows[0], tournament);
+}
+
 export async function upsertTournamentRegistration(input: {
   tournamentId: string;
   playerName: string;
   city: string;
   note: string;
+  pingPongUserId?: string;
 }) {
   await ensurePingPongReady();
 
@@ -316,6 +603,43 @@ export async function upsertTournamentRegistration(input: {
 
   if (status !== '报名中') {
     throw new Error('tournament is not open for registration');
+  }
+
+  if (input.pingPongUserId) {
+    await sql`
+      INSERT INTO pingpong_registrations (
+        tournament_id,
+        pingpong_user_id,
+        player_id,
+        registrant_name,
+        registrant_city,
+        note,
+        seed,
+        status,
+        source
+      )
+      VALUES (
+        ${input.tournamentId},
+        ${input.pingPongUserId},
+        NULL,
+        ${input.playerName},
+        ${input.city},
+        ${input.note},
+        NULL,
+        '待审核',
+        'public'
+      )
+      ON CONFLICT (tournament_id, pingpong_user_id)
+      DO UPDATE SET
+        registrant_name = EXCLUDED.registrant_name,
+        registrant_city = EXCLUDED.registrant_city,
+        note = EXCLUDED.note,
+        status = '待审核',
+        source = 'public',
+        updated_at = CURRENT_TIMESTAMP
+    `;
+
+    return;
   }
 
   await sql`
@@ -350,6 +674,30 @@ export async function upsertTournamentRegistration(input: {
 
 async function ensurePingPongSchema() {
   await sql`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS pingpong_users (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      name VARCHAR(100) NOT NULL,
+      city VARCHAR(160) NOT NULL,
+      club VARCHAR(160) NOT NULL DEFAULT '',
+      email VARCHAR(160),
+      phone VARCHAR(40),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      CHECK (email IS NOT NULL OR phone IS NOT NULL)
+    )
+  `;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS pingpong_sessions (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      user_id UUID NOT NULL REFERENCES pingpong_users(id) ON DELETE CASCADE,
+      session_token_hash VARCHAR(64) NOT NULL UNIQUE,
+      expires_at TIMESTAMP NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `;
 
   await sql`
     CREATE TABLE IF NOT EXISTS pingpong_players (
@@ -395,6 +743,7 @@ async function ensurePingPongSchema() {
     CREATE TABLE IF NOT EXISTS pingpong_registrations (
       id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
       tournament_id TEXT NOT NULL REFERENCES pingpong_tournaments(id) ON DELETE CASCADE,
+      pingpong_user_id UUID REFERENCES pingpong_users(id) ON DELETE SET NULL,
       player_id TEXT REFERENCES pingpong_players(id) ON DELETE SET NULL,
       registrant_name VARCHAR(100) NOT NULL,
       registrant_city VARCHAR(160) NOT NULL,
@@ -406,6 +755,11 @@ async function ensurePingPongSchema() {
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       UNIQUE (tournament_id, registrant_name, registrant_city)
     )
+  `;
+
+  await sql`
+    ALTER TABLE pingpong_registrations
+    ADD COLUMN IF NOT EXISTS pingpong_user_id UUID REFERENCES pingpong_users(id) ON DELETE SET NULL
   `;
 
   await sql`
@@ -446,6 +800,28 @@ async function ensurePingPongSchema() {
   await sql`
     CREATE INDEX IF NOT EXISTS idx_pingpong_registrations_tournament
     ON pingpong_registrations(tournament_id, updated_at DESC)
+  `;
+
+  await sql`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_pingpong_users_email_unique
+    ON pingpong_users(LOWER(email))
+    WHERE email IS NOT NULL
+  `;
+
+  await sql`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_pingpong_users_phone_unique
+    ON pingpong_users(phone)
+    WHERE phone IS NOT NULL
+  `;
+
+  await sql`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_pingpong_registrations_user_unique
+    ON pingpong_registrations(tournament_id, pingpong_user_id)
+  `;
+
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_pingpong_sessions_expiry
+    ON pingpong_sessions(user_id, expires_at DESC)
   `;
 
   await sql`
@@ -622,7 +998,9 @@ async function seedPingPongData() {
     }
 
     for (const participant of tournament.participants) {
-      const player = seedPlayers.find((entry) => entry.id === participant.playerId);
+      const player = seedPlayers.find(
+        (entry) => entry.id === participant.playerId,
+      );
       if (!player) {
         continue;
       }
@@ -732,9 +1110,10 @@ async function fetchAllPlayers() {
 async function fetchAllTournaments() {
   await ensurePingPongReady();
 
-  const [players, tournamentResult, registrationResult, matchResult] = await Promise.all([
-    fetchAllPlayers(),
-    sql<TournamentRow>`
+  const [players, tournamentResult, registrationResult, matchResult] =
+    await Promise.all([
+      fetchAllPlayers(),
+      sql<TournamentRow>`
       SELECT
         id,
         title,
@@ -752,7 +1131,7 @@ async function fetchAllTournaments() {
       FROM pingpong_tournaments
       ORDER BY date ASC
     `,
-    sql<RegistrationRow>`
+      sql<RegistrationRow>`
       SELECT
         id,
         tournament_id,
@@ -769,7 +1148,7 @@ async function fetchAllTournaments() {
       WHERE player_id IS NOT NULL
       ORDER BY tournament_id ASC, seed ASC NULLS LAST, updated_at ASC
     `,
-    sql<MatchRow>`
+      sql<MatchRow>`
       SELECT
         id,
         tournament_id,
@@ -784,7 +1163,7 @@ async function fetchAllTournaments() {
       FROM pingpong_matches
       ORDER BY tournament_id ASC, sort_order ASC, start_time ASC
     `,
-  ]);
+    ]);
 
   const playerMap = new Map(players.map((player) => [player.id, player]));
   const participantMap = new Map<string, TournamentParticipant[]>();
@@ -792,7 +1171,11 @@ async function fetchAllTournaments() {
 
   for (const row of registrationResult.rows) {
     const player = row.player_id ? playerMap.get(row.player_id) : null;
-    if (!player || row.seed == null || (row.status !== '已确认' && row.status !== '候补')) {
+    if (
+      !player ||
+      row.seed == null ||
+      (row.status !== '已确认' && row.status !== '候补')
+    ) {
       continue;
     }
 
@@ -862,6 +1245,142 @@ function mapRegistrationRecord(
   };
 }
 
+function mapPingPongUser(row: PingPongUserRow): PingPongUserProfile {
+  return {
+    id: row.id,
+    name: row.name,
+    city: row.city,
+    club: row.club,
+    email: row.email,
+    phone: row.phone,
+    createdAt: formatDateTime(row.created_at),
+    updatedAt: formatDateTime(row.updated_at),
+  };
+}
+
+async function findPingPongUserByEmail(email: string) {
+  const { rows } = await sql<PingPongUserRow>`
+    SELECT
+      id,
+      name,
+      city,
+      club,
+      email,
+      phone,
+      created_at,
+      updated_at
+    FROM pingpong_users
+    WHERE LOWER(email) = ${email}
+    LIMIT 1
+  `;
+
+  return rows[0] ? mapPingPongUser(rows[0]) : null;
+}
+
+async function findPingPongUserByPhone(phone: string) {
+  const { rows } = await sql<PingPongUserRow>`
+    SELECT
+      id,
+      name,
+      city,
+      club,
+      email,
+      phone,
+      created_at,
+      updated_at
+    FROM pingpong_users
+    WHERE phone = ${phone}
+    LIMIT 1
+  `;
+
+  return rows[0] ? mapPingPongUser(rows[0]) : null;
+}
+
+async function findPingPongUserForLoginByEmail(
+  normalizedName: string,
+  email: string,
+) {
+  const { rows } = await sql<PingPongUserRow>`
+    SELECT
+      id,
+      name,
+      city,
+      club,
+      email,
+      phone,
+      created_at,
+      updated_at
+    FROM pingpong_users
+    WHERE LOWER(name) = ${normalizedName}
+      AND LOWER(email) = ${email}
+    LIMIT 1
+  `;
+
+  return rows[0] ? mapPingPongUser(rows[0]) : null;
+}
+
+async function findPingPongUserForLoginByPhone(
+  normalizedName: string,
+  phone: string,
+) {
+  const { rows } = await sql<PingPongUserRow>`
+    SELECT
+      id,
+      name,
+      city,
+      club,
+      email,
+      phone,
+      created_at,
+      updated_at
+    FROM pingpong_users
+    WHERE LOWER(name) = ${normalizedName}
+      AND phone = ${phone}
+    LIMIT 1
+  `;
+
+  return rows[0] ? mapPingPongUser(rows[0]) : null;
+}
+
+async function createPingPongSession(userId: string) {
+  const sessionToken = randomBytes(24).toString('hex');
+
+  await sql`
+    DELETE FROM pingpong_sessions
+    WHERE user_id = ${userId}
+      OR expires_at <= CURRENT_TIMESTAMP
+  `;
+
+  await sql`
+    INSERT INTO pingpong_sessions (
+      user_id,
+      session_token_hash,
+      expires_at
+    )
+    VALUES (
+      ${userId},
+      ${hashPingPongSessionToken(sessionToken)},
+      CURRENT_TIMESTAMP + (${PINGPONG_SESSION_MAX_AGE} * INTERVAL '1 second')
+    )
+  `;
+
+  return sessionToken;
+}
+
+async function linkRegistrationsToPingPongUser(
+  userId: string,
+  name: string,
+  city: string,
+) {
+  await sql`
+    UPDATE pingpong_registrations
+    SET pingpong_user_id = ${userId}
+    WHERE pingpong_user_id IS NULL
+      AND LOWER(registrant_name) = ${normalizeRegistrantPart(name)}
+      AND LOWER(registrant_city) = ${normalizeRegistrantPart(city)}
+  `;
+}
+
 function parseRegistrantKey(registrantKey?: string) {
   if (!registrantKey) {
     return null;
@@ -899,6 +1418,29 @@ function parseStringArray(value: unknown) {
 
 function normalizeRegistrantPart(value: string) {
   return value.trim().toLowerCase();
+}
+
+function normalizeOptionalEmail(value?: string | null) {
+  const normalized = value?.trim().toLowerCase() ?? '';
+  return normalized || null;
+}
+
+function normalizeOptionalPhone(value?: string | null) {
+  const trimmed = value?.trim() ?? '';
+  if (!trimmed) {
+    return null;
+  }
+
+  const digits = trimmed.replace(/\D/g, '');
+  if (!digits) {
+    return null;
+  }
+
+  return trimmed.startsWith('+') ? `+${digits}` : digits;
+}
+
+function hashPingPongSessionToken(sessionToken: string) {
+  return createHash('sha256').update(sessionToken).digest('hex');
 }
 
 function formatDateOnly(value: Date | string) {

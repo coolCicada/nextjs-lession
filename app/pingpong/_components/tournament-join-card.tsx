@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 import { registerForTournament } from '@/app/pingpong/actions';
 import { type RegistrationRecord } from '@/app/pingpong/data';
 import { PINGPONG_FIELD_CLASSNAME } from '@/app/pingpong/_components/pingpong-ui';
@@ -11,6 +13,12 @@ type TournamentJoinCardProps = {
   registration: RegistrationRecord | null;
   hasRecentRegistrations?: boolean;
   justRegistered?: boolean;
+  currentUser?: {
+    id: string;
+    name: string;
+    city: string;
+    club: string;
+  } | null;
 };
 
 export function TournamentJoinCard({
@@ -21,6 +29,7 @@ export function TournamentJoinCard({
   registration,
   hasRecentRegistrations = false,
   justRegistered = false,
+  currentUser = null,
 }: TournamentJoinCardProps) {
   const isJoinable = status === '报名中';
   const formAction = registerForTournament.bind(null, tournamentId);
@@ -36,7 +45,8 @@ export function TournamentJoinCard({
             报名这场比赛
           </h3>
           <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
-            当前 MVP 已改为数据库保存。提交后可在“我的”里继续查看最近一次报名记录。
+            当前 MVP
+            已改为数据库保存。提交后可在“我的”里继续查看最近一次报名记录。
           </p>
         </div>
         <div className="rounded-2xl border border-slate-200/80 bg-white/80 px-3 py-2 text-xs text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
@@ -64,7 +74,9 @@ export function TournamentJoinCard({
             </p>
           ) : null}
           <p className="mt-3 text-xs uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-200">
-            {justRegistered ? '刚刚已写入数据库' : `最近更新于 ${registration.updatedAt}`}
+            {justRegistered
+              ? '刚刚已写入数据库'
+              : `最近更新于 ${registration.updatedAt}`}
           </p>
         </div>
       ) : null}
@@ -75,6 +87,25 @@ export function TournamentJoinCard({
         </p>
       ) : null}
 
+      {!currentUser && isJoinable ? (
+        <div className="mt-4 rounded-[20px] border border-sky-200/80 bg-sky-50/80 p-4 text-sm text-sky-900 dark:border-sky-400/20 dark:bg-sky-500/10 dark:text-sky-100">
+          想把报名和个人资料绑定到账号？
+          <Link
+            href="/pingpong/auth"
+            className="ml-2 font-medium underline underline-offset-4"
+          >
+            去登录 / 注册
+          </Link>
+        </div>
+      ) : null}
+
+      {currentUser ? (
+        <div className="mt-4 rounded-[20px] border border-slate-200/80 bg-white/80 p-4 text-sm text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
+          已使用账号资料报名：{currentUser.name} · {currentUser.city}
+          {currentUser.club ? ` · ${currentUser.club}` : ''}
+        </div>
+      ) : null}
+
       {!isJoinable ? (
         <div className="mt-5 rounded-[20px] border border-slate-200/80 bg-slate-50/80 p-4 text-sm text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-400">
           当前赛事状态为“{status}”，暂时不能报名。
@@ -82,17 +113,19 @@ export function TournamentJoinCard({
       ) : (
         <form action={formAction} className="mt-5 grid gap-3">
           <input
-            required
+            required={!currentUser}
             name="playerName"
             placeholder="你的姓名"
-            defaultValue={registration?.playerName}
+            defaultValue={currentUser?.name ?? registration?.playerName}
+            readOnly={Boolean(currentUser)}
             className={`h-12 ${PINGPONG_FIELD_CLASSNAME}`}
           />
           <input
-            required
+            required={!currentUser}
             name="city"
             placeholder="所在城市 / 俱乐部"
-            defaultValue={registration?.city}
+            defaultValue={currentUser?.city ?? registration?.city}
+            readOnly={Boolean(currentUser)}
             className={`h-12 ${PINGPONG_FIELD_CLASSNAME}`}
           />
           <textarea
