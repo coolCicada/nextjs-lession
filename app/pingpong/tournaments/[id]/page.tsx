@@ -24,16 +24,21 @@ export default async function TournamentDetailPage({
   params,
   searchParams,
 }: {
-  params: { id: string };
-  searchParams?: { registered?: string };
+  params: Promise<{ id: string }>;
+  searchParams?: Promise<{ registered?: string | string[] }>;
 }) {
-  const tournament = await getTournamentById(params.id);
+  const [{ id }, resolvedSearchParams, cookieStore] = await Promise.all([
+    params,
+    searchParams,
+    cookies(),
+  ]);
+  const tournament = await getTournamentById(id);
 
   if (!tournament) {
     notFound();
   }
 
-  const registrantKey = cookies().get(PINGPONG_REGISTRANT_COOKIE)?.value;
+  const registrantKey = cookieStore.get(PINGPONG_REGISTRANT_COOKIE)?.value;
   const participants = tournament.participants.filter(
     (participant): participant is typeof participant & { player: NonNullable<typeof participant.player> } =>
       Boolean(participant.player),
@@ -84,7 +89,7 @@ export default async function TournamentDetailPage({
             status={tournament.status}
             registration={registration}
             hasRecentRegistrations={recentRegistrations.length > 0}
-            justRegistered={searchParams?.registered === '1'}
+            justRegistered={resolvedSearchParams?.registered === '1'}
           />
         </div>
 

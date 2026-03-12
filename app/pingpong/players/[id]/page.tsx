@@ -16,9 +16,10 @@ export const dynamic = 'force-dynamic';
 export default async function PlayerDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  const player = await getPlayerById(params.id);
+  const { id } = await params;
+  const player = await getPlayerById(id);
 
   if (!player) {
     notFound();
