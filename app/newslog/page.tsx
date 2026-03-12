@@ -35,7 +35,7 @@ export default function NewslogPage() {
       return;
     }
 
-    fetch("/worklog/api/news", {
+    fetch("/worklog/api/news?excludeRecordType=english-daily", {
       cache: "no-store",
       headers: { Authorization: `Bearer ${token}` },
     })

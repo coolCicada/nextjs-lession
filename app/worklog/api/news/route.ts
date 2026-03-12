@@ -24,6 +24,7 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const recordType = searchParams.get('recordType');
+    const excludeRecordType = searchParams.get('excludeRecordType');
 
     const { rows } = recordType
       ? await sql`
@@ -38,6 +39,23 @@ export async function GET(request: Request) {
             updated_at as "updatedAt"
           FROM news_entries
           WHERE user_id = ${user.id} AND record_type = ${recordType}
+          ORDER BY created_at DESC
+          LIMIT 300
+        `
+      : excludeRecordType
+      ? await sql`
+          SELECT
+            id,
+            title,
+            content,
+            source,
+            synced_from as "syncedFrom",
+            record_type as "recordType",
+            created_at as "createdAt",
+            updated_at as "updatedAt"
+          FROM news_entries
+          WHERE user_id = ${user.id}
+            AND (record_type IS NULL OR record_type <> ${excludeRecordType})
           ORDER BY created_at DESC
           LIMIT 300
         `

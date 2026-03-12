@@ -44,6 +44,16 @@ const features = [
     text: "text-violet-600",
     shadow: "shadow-violet-100",
   },
+  {
+    href: "/englishlog",
+    title: "英语库",
+    desc: "每日英语与学习沉淀",
+    icon: "✎",
+    gradient: "from-emerald-100 to-teal-50",
+    border: "border-emerald-200",
+    text: "text-emerald-600",
+    shadow: "shadow-emerald-100",
+  },
 ];
 
 const quickActions = [
