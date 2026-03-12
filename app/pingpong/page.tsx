@@ -9,37 +9,42 @@ import {
   SectionTitle,
   TournamentCard,
 } from '@/app/pingpong/_components/pingpong-ui';
-import { GlassPanel } from '@/app/ui/app-shell';
 import {
   getRecentMatches,
-  players,
+  searchPlayers,
   searchTournaments,
-  tournaments,
-} from '@/app/pingpong/data';
+} from '@/app/pingpong/_lib/db';
+import { GlassPanel } from '@/app/ui/app-shell';
 
-export default function PingPongPage({
+export const dynamic = 'force-dynamic';
+
+export default async function PingPongPage({
   searchParams,
 }: {
   searchParams?: { q?: string };
 }) {
   const query = searchParams?.q?.trim() ?? '';
-  const filteredTournaments = searchTournaments(query);
-  const liveCount = tournaments.filter(
+  const [filteredTournaments, allTournaments, allPlayers, recentMatches] = await Promise.all([
+    searchTournaments(query),
+    searchTournaments(''),
+    searchPlayers(''),
+    getRecentMatches(5),
+  ]);
+  const liveCount = allTournaments.filter(
     (tournament) => tournament.status === '进行中',
   ).length;
-  const openCount = tournaments.filter(
+  const openCount = allTournaments.filter(
     (tournament) => tournament.status === '报名中',
   ).length;
-  const activePlayers = players.length;
-  const recentMatches = getRecentMatches(5);
-  const topPlayers = [...players]
+  const activePlayers = allPlayers.length;
+  const topPlayers = [...allPlayers]
     .sort((left, right) => right.totalPoints - left.totalPoints)
     .slice(0, 3);
 
   return (
     <PingPongShell
       title="开球站"
-      subtitle="开球网风格的本地 MVP：赛事浏览、球员积分、搜索与模拟报名，先在应用内闭环。"
+      subtitle="开球网风格的本地 MVP：赛事浏览、球员积分、搜索与数据库报名，先在应用内闭环。"
     >
       <div className="grid gap-8">
         <div className="grid gap-4 lg:grid-cols-[1.4fr_0.6fr]">
@@ -47,7 +52,7 @@ export default function PingPongPage({
             <SectionTitle
               eyebrow="比赛中心"
               title="查看比赛与近期对阵动态"
-              body="支持按比赛名称或城市搜索，进入详情页后可查看参赛名单、赛程安排，以及本地模拟报名流程。"
+              body="支持按比赛名称或城市搜索，进入详情页后可查看参赛名单、赛程安排，以及当前数据库驱动的报名流程。"
             />
             <div className="mt-5">
               <SearchForm
@@ -64,13 +69,13 @@ export default function PingPongPage({
                 查看球员积分
               </Link>
               <span className="rounded-full border border-slate-200/80 bg-white px-4 py-2 dark:border-white/10 dark:bg-white/5">
-                当前内置 {tournaments.length} 场比赛、{players.length} 位球员
+                当前接入 {allTournaments.length} 场比赛、{allPlayers.length} 位球员
               </span>
             </div>
           </GlassPanel>
 
           <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
-            <MetricCard label="可报名赛事" value={String(openCount)} hint="当前可以本地模拟报名的比赛" />
+            <MetricCard label="可报名赛事" value={String(openCount)} hint="当前可以提交数据库报名的比赛" />
             <MetricCard label="进行中赛事" value={String(liveCount)} hint="正在更新中的比赛与对阵" />
             <MetricCard label="收录球员" value={String(activePlayers)} hint="包含积分、等级分与历史走势" />
           </div>

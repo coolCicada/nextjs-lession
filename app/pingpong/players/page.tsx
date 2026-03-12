@@ -4,16 +4,18 @@ import {
   SearchForm,
   SectionTitle,
 } from '@/app/pingpong/_components/pingpong-ui';
+import { searchPlayers } from '@/app/pingpong/_lib/db';
 import { GlassPanel } from '@/app/ui/app-shell';
-import { searchPlayers } from '@/app/pingpong/data';
 
-export default function PlayersPage({
+export const dynamic = 'force-dynamic';
+
+export default async function PlayersPage({
   searchParams,
 }: {
   searchParams?: { q?: string };
 }) {
   const query = searchParams?.q?.trim() ?? '';
-  const filteredPlayers = searchPlayers(query).sort(
+  const filteredPlayers = (await searchPlayers(query)).sort(
     (left, right) => right.totalPoints - left.totalPoints,
   );
 
@@ -27,7 +29,7 @@ export default function PlayersPage({
           <SectionTitle
             eyebrow="球员搜索"
             title="按姓名搜索球员"
-            body="当前为本地 mock 数据，已内置球员资料、积分、俱乐部和最近等级分变化。"
+            body="当前已从数据库读取球员资料、积分、俱乐部和最近等级分变化。"
           />
           <div className="mt-5">
             <SearchForm

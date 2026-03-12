@@ -29,6 +29,7 @@ export type TournamentParticipant = {
   playerId: string;
   seed: number;
   status: '已确认' | '候补';
+  player?: Player;
 };
 
 export type TournamentMatch = {
@@ -38,6 +39,8 @@ export type TournamentMatch = {
   startTime: string;
   playerAId: string;
   playerBId: string;
+  playerAName?: string;
+  playerBName?: string;
   score: string;
   status: '已完成' | '未开始' | '进行中';
 };
@@ -58,6 +61,21 @@ export type Tournament = {
   tags: string[];
   participants: TournamentParticipant[];
   matches: TournamentMatch[];
+};
+
+export type RegistrationRecord = {
+  id: string;
+  tournamentId: string;
+  tournamentTitle: string;
+  tournamentDate: string;
+  tournamentCity: string;
+  playerName: string;
+  city: string;
+  note: string;
+  status: '已确认' | '候补' | '待审核';
+  source: 'seed' | 'public';
+  createdAt: string;
+  updatedAt: string;
 };
 
 export const players: Player[] = [

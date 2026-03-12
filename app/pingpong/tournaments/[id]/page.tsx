@@ -1,3 +1,4 @@
+import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
 
 import {
@@ -8,27 +9,41 @@ import {
   SectionTitle,
 } from '@/app/pingpong/_components/pingpong-ui';
 import { TournamentJoinCard } from '@/app/pingpong/_components/tournament-join-card';
-import { GlassPanel } from '@/app/ui/app-shell';
 import {
+  PINGPONG_REGISTRANT_COOKIE,
   getPlayerById,
+  getRegistrationForRegistrant,
   getTournamentById,
-  getTournamentParticipants,
-} from '@/app/pingpong/data';
+  getTournamentRecentRegistrations,
+} from '@/app/pingpong/_lib/db';
+import { GlassPanel } from '@/app/ui/app-shell';
 
-export default function TournamentDetailPage({
+export const dynamic = 'force-dynamic';
+
+export default async function TournamentDetailPage({
   params,
+  searchParams,
 }: {
   params: { id: string };
+  searchParams?: { registered?: string };
 }) {
-  const tournament = getTournamentById(params.id);
+  const tournament = await getTournamentById(params.id);
 
   if (!tournament) {
     notFound();
   }
 
-  const participants = getTournamentParticipants(tournament);
+  const registrantKey = cookies().get(PINGPONG_REGISTRANT_COOKIE)?.value;
+  const participants = tournament.participants.filter(
+    (participant): participant is typeof participant & { player: NonNullable<typeof participant.player> } =>
+      Boolean(participant.player),
+  );
+  const [registration, recentRegistrations] = await Promise.all([
+    getRegistrationForRegistrant(tournament.id, registrantKey),
+    getTournamentRecentRegistrations(tournament.id, 5),
+  ]);
   const featuredPlayer = participants[0]
-    ? getPlayerById(participants[0].playerId)
+    ? await getPlayerById(participants[0].playerId)
     : null;
 
   return (
@@ -67,6 +82,9 @@ export default function TournamentDetailPage({
             tournamentTitle={tournament.title}
             signupDeadline={tournament.signupDeadline}
             status={tournament.status}
+            registration={registration}
+            hasRecentRegistrations={recentRegistrations.length > 0}
+            justRegistered={searchParams?.registered === '1'}
           />
         </div>
 
@@ -100,6 +118,37 @@ export default function TournamentDetailPage({
             <MatchList matches={tournament.matches} />
           </section>
         </div>
+
+        {recentRegistrations.length > 0 ? (
+          <GlassPanel className="p-5">
+            <p className="text-xs uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
+              最近公开报名
+            </p>
+            <h3 className="mt-2 text-lg font-semibold text-slate-950 dark:text-white">
+              最新写入数据库的报名记录
+            </h3>
+            <div className="mt-4 grid gap-3 md:grid-cols-2">
+              {recentRegistrations.map((entry) => (
+                <div
+                  key={entry.id}
+                  className="rounded-2xl border border-slate-200/80 bg-white/80 px-4 py-3 dark:border-white/10 dark:bg-white/5"
+                >
+                  <p className="font-medium text-slate-900 dark:text-white">
+                    {entry.playerName} · {entry.city}
+                  </p>
+                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                    {entry.status} · {entry.updatedAt}
+                  </p>
+                  {entry.note ? (
+                    <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+                      {entry.note}
+                    </p>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          </GlassPanel>
+        ) : null}
 
         {featuredPlayer ? (
           <div className="grid gap-8 lg:grid-cols-[0.8fr_1.2fr]">

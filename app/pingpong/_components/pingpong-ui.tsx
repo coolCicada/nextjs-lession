@@ -7,9 +7,11 @@ import {
   Tournament,
   TournamentMatch,
   TournamentParticipant,
-  getPlayerById,
   getRatingSummary,
 } from '@/app/pingpong/data';
+
+export const PINGPONG_FIELD_CLASSNAME =
+  'rounded-2xl border border-slate-200/80 bg-white/90 px-4 text-base text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-sky-300 focus:ring-2 focus:ring-sky-200 md:text-sm dark:border-white/10 dark:bg-white/5 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-sky-400/40 dark:focus:ring-sky-500/20';
 
 export function PingPongShell({
   title,
@@ -76,7 +78,7 @@ export function SearchForm({
         name={name}
         defaultValue={defaultValue}
         placeholder={placeholder}
-        className="h-12 flex-1 rounded-2xl border border-slate-200/80 bg-white/90 px-4 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-sky-300 focus:ring-2 focus:ring-sky-200 dark:border-white/10 dark:bg-white/5 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-sky-400/40 dark:focus:ring-sky-500/20"
+        className={`h-12 flex-1 ${PINGPONG_FIELD_CLASSNAME}`}
       />
       <button
         type="submit"
@@ -166,10 +168,8 @@ export function MatchList({
   return (
     <div className="space-y-3">
       {matches.map((match) => {
-        const playerA = getPlayerById(match.playerAId);
-        const playerB = getPlayerById(match.playerBId);
-
-        if (!playerA || !playerB) return null;
+        const playerAName = match.playerAName ?? match.playerAId;
+        const playerBName = match.playerBName ?? match.playerBId;
 
         return (
           <GlassPanel key={match.id} className="p-4">
@@ -183,11 +183,11 @@ export function MatchList({
                   {match.tournamentTitle ? <span>{match.tournamentTitle}</span> : null}
                 </div>
                 <div className="mt-3 flex items-center gap-3 text-base font-semibold text-slate-950 dark:text-white">
-                  <span>{playerA.name}</span>
+                  <span>{playerAName}</span>
                   <span className="rounded-full bg-slate-900 px-3 py-1 text-xs text-white dark:bg-white dark:text-slate-900">
                     {match.score}
                   </span>
-                  <span>{playerB.name}</span>
+                  <span>{playerBName}</span>
                 </div>
                 <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
                   {match.table} · {match.startTime}

@@ -7,28 +7,25 @@ import {
 } from '@/app/pingpong/_components/pingpong-ui';
 import { GlassPanel } from '@/app/ui/app-shell';
 import {
-  getPlayerById,
   getRatingSummary,
-  tournaments,
 } from '@/app/pingpong/data';
+import { getPlayerById, getPlayerTournaments } from '@/app/pingpong/_lib/db';
 
-export default function PlayerDetailPage({
+export const dynamic = 'force-dynamic';
+
+export default async function PlayerDetailPage({
   params,
 }: {
   params: { id: string };
 }) {
-  const player = getPlayerById(params.id);
+  const player = await getPlayerById(params.id);
 
   if (!player) {
     notFound();
   }
 
   const summary = getRatingSummary(player);
-  const nextEvents = tournaments.filter((tournament) =>
-    tournament.participants.some(
-      (participant) => participant.playerId === player.id,
-    ),
-  );
+  const nextEvents = await getPlayerTournaments(player.id);
 
   return (
     <PingPongShell
