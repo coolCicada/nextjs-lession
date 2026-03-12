@@ -10,8 +10,22 @@ type NewsItem = {
   content: string;
   source: string;
   syncedFrom: string;
+  recordType?: string;
   createdAt: string;
 };
+
+function getNewsTypeLabel(recordType?: string) {
+  switch (recordType) {
+    case "daily-finance-brief":
+      return "财经晨报";
+    case "news-quant":
+      return "量化简报";
+    case "manual-news":
+      return "手动新闻";
+    default:
+      return recordType || "新闻记录";
+  }
+}
 
 function formatTime(date: string) {
   return new Date(date).toLocaleString("zh-CN", {
@@ -95,8 +109,11 @@ export default function NewsDetailPage() {
             <span className="text-xs text-slate-400 whitespace-nowrap">{formatTime(item.createdAt)}</span>
           </div>
 
-          <div className="mt-4 text-xs text-slate-400">
-            来源：{item.source} · 触发：{item.syncedFrom}
+          <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-slate-400">
+            <span className="inline-flex rounded-full bg-sky-50 px-2.5 py-1 font-medium text-sky-600 ring-1 ring-sky-100">
+              {getNewsTypeLabel(item.recordType)}
+            </span>
+            <span>来源：{item.source} · 触发：{item.syncedFrom}</span>
           </div>
 
           <div className="mt-6 whitespace-pre-wrap text-[15px] leading-8 text-slate-700">

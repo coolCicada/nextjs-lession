@@ -10,8 +10,22 @@ type NewsItem = {
   content: string;
   source: string;
   syncedFrom: string;
+  recordType?: string;
   createdAt: string;
 };
+
+function getNewsTypeLabel(recordType?: string) {
+  switch (recordType) {
+    case "daily-finance-brief":
+      return "财经晨报";
+    case "news-quant":
+      return "量化简报";
+    case "manual-news":
+      return "手动新闻";
+    default:
+      return recordType || "新闻记录";
+  }
+}
 
 function formatTime(date: string) {
   return new Date(date).toLocaleString("zh-CN", {
@@ -72,7 +86,7 @@ export default function NewslogPage() {
           </Link>
           <div>
             <h1 className="text-xl font-semibold text-slate-800">新闻分析记录</h1>
-            <p className="text-xs text-slate-400 mt-0.5">支持 #sync-news 手动写入，且每日财经简讯会自动落到本地 SQLite</p>
+            <p className="text-xs text-slate-400 mt-0.5">已自动排除每日英语记录；这里主要看新闻、财经与分析沉淀</p>
           </div>
         </div>
       </header>
@@ -91,7 +105,12 @@ export default function NewslogPage() {
                 className="block bg-white/70 border border-slate-100 rounded-2xl p-5 shadow-sm transition hover:shadow-md hover:border-sky-100"
               >
                 <div className="flex items-center justify-between gap-4">
-                  <h2 className="text-base font-medium text-slate-800">{item.title}</h2>
+                  <div className="min-w-0">
+                    <div className="mb-2 inline-flex rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-medium text-sky-600 ring-1 ring-sky-100">
+                      {getNewsTypeLabel(item.recordType)}
+                    </div>
+                    <h2 className="text-base font-medium text-slate-800">{item.title}</h2>
+                  </div>
                   <span className="text-[11px] text-slate-400 whitespace-nowrap">{formatTime(item.createdAt)}</span>
                 </div>
                 <p className="text-sm text-slate-600 mt-3 whitespace-pre-wrap leading-6 line-clamp-3">{item.content}</p>

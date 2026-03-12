@@ -14,6 +14,11 @@ type EnglishItem = {
   createdAt: string;
 };
 
+function getEnglishTypeLabel(recordType?: string) {
+  if (recordType === "english-daily") return "每日英语";
+  return recordType || "英语记录";
+}
+
 function formatTime(date: string) {
   return new Date(date).toLocaleString("zh-CN", {
     timeZone: "Asia/Shanghai",
@@ -67,7 +72,7 @@ export default function EnglishlogPage() {
           <Link href="/" className="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white shadow-lg shadow-emerald-200">←</Link>
           <div>
             <h1 className="text-xl font-semibold text-slate-800">英文学习记录</h1>
-            <p className="text-xs text-slate-400 mt-0.5">短期先接入 content_records，类型为 english-daily</p>
+            <p className="text-xs text-slate-400 mt-0.5">这里专门收每日英语与后续英语学习沉淀</p>
           </div>
         </div>
       </header>
@@ -80,7 +85,12 @@ export default function EnglishlogPage() {
             {items.map((item) => (
               <Link key={item.id} href={`/englishlog/${item.id}`} className="block bg-white/70 border border-slate-100 rounded-2xl p-5 shadow-sm transition hover:shadow-md hover:border-emerald-100">
                 <div className="flex items-center justify-between gap-4">
-                  <h2 className="text-base font-medium text-slate-800">{item.title}</h2>
+                  <div className="min-w-0">
+                    <div className="mb-2 inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-medium text-emerald-600 ring-1 ring-emerald-100">
+                      {getEnglishTypeLabel(item.recordType)}
+                    </div>
+                    <h2 className="text-base font-medium text-slate-800">{item.title}</h2>
+                  </div>
                   <span className="text-[11px] text-slate-400 whitespace-nowrap">{formatTime(item.createdAt)}</span>
                 </div>
                 <p className="text-sm text-slate-600 mt-3 whitespace-pre-wrap leading-6 line-clamp-3">{item.content}</p>

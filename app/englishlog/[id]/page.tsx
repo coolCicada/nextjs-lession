@@ -16,6 +16,11 @@ type EnglishItem = {
   createdAt: string;
 };
 
+function getEnglishTypeLabel(recordType?: string) {
+  if (recordType === "english-daily") return "每日英语";
+  return recordType || "英语记录";
+}
+
 function formatTime(date: string) {
   return new Date(date).toLocaleString("zh-CN", {
     timeZone: "Asia/Shanghai",
@@ -90,7 +95,12 @@ export default function EnglishDetailPage() {
             <h1 className="text-2xl font-semibold text-slate-800 leading-9">{item.title}</h1>
             <span className="text-xs text-slate-400 whitespace-nowrap">{formatTime(item.createdAt)}</span>
           </div>
-          <div className="mt-4 text-xs text-slate-400">来源：{item.source} · 触发：{item.syncedFrom}</div>
+          <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-slate-400">
+            <span className="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 font-medium text-emerald-600 ring-1 ring-emerald-100">
+              {getEnglishTypeLabel(item.recordType)}
+            </span>
+            <span>来源：{item.source} · 触发：{item.syncedFrom}</span>
+          </div>
           <div
             className="mt-6 text-[15px] leading-8 text-slate-700 [&_h1]:my-5 [&_h1]:text-2xl [&_h1]:font-semibold [&_h1]:text-slate-800 [&_h2]:my-4 [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:text-slate-800 [&_h3]:my-4 [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:text-slate-800 [&_p]:my-3 [&_ul]:my-4 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:my-4 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:my-1 [&_strong]:font-semibold [&_strong]:text-slate-800 [&_code]:rounded [&_code]:bg-slate-100 [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-sky-700 [&_pre]:my-4 [&_pre]:overflow-x-auto [&_pre]:rounded-xl [&_pre]:bg-slate-900 [&_pre]:p-4 [&_pre]:text-slate-100"
           >
