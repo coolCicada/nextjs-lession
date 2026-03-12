@@ -1,3 +1,5 @@
+import { Suspense } from 'react';
+
 import {
   PingPongShell,
   PlayerCard,
@@ -15,12 +17,10 @@ export default async function PlayersPage({
   searchParams?: Promise<{ q?: string | string[] }>;
 }) {
   const resolvedSearchParams = await searchParams;
-  const query = typeof resolvedSearchParams?.q === 'string'
-    ? resolvedSearchParams.q.trim()
-    : '';
-  const filteredPlayers = (await searchPlayers(query)).sort(
-    (left, right) => right.totalPoints - left.totalPoints,
-  );
+  const query =
+    typeof resolvedSearchParams?.q === 'string'
+      ? resolvedSearchParams.q.trim()
+      : '';
 
   return (
     <PingPongShell
@@ -43,34 +43,73 @@ export default async function PlayersPage({
           </div>
         </GlassPanel>
 
-        <section>
-          <div className="mb-4 flex items-end justify-between gap-4">
-            <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
-                搜索结果
-              </p>
-              <h2 className="mt-2 text-xl font-semibold text-slate-950 dark:text-white">
-                {query ? `匹配“${query}”的球员` : '全部收录球员'}
-              </h2>
-            </div>
-            <span className="text-sm text-slate-500 dark:text-slate-400">
-              共 {filteredPlayers.length} 人
-            </span>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {filteredPlayers.map((player) => (
-              <PlayerCard key={player.id} player={player} />
-            ))}
-          </div>
-
-          {filteredPlayers.length === 0 ? (
-            <GlassPanel className="mt-4 p-6 text-sm text-slate-500 dark:text-slate-400">
-              没有找到匹配球员，试试别的名字、城市或俱乐部关键词。
-            </GlassPanel>
-          ) : null}
-        </section>
+        <Suspense
+          key={query}
+          fallback={<PlayersResultsFallback query={query} />}
+        >
+          <PlayersResults query={query} />
+        </Suspense>
       </div>
     </PingPongShell>
+  );
+}
+
+async function PlayersResults({ query }: { query: string }) {
+  const filteredPlayers = (await searchPlayers(query)).sort(
+    (left, right) => right.totalPoints - left.totalPoints,
+  );
+
+  return (
+    <section>
+      <div className="mb-4 flex items-end justify-between gap-4">
+        <div>
+          <p className="text-xs uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
+            搜索结果
+          </p>
+          <h2 className="mt-2 text-xl font-semibold text-slate-950 dark:text-white">
+            {query ? `匹配“${query}”的球员` : '全部收录球员'}
+          </h2>
+        </div>
+        <span className="text-sm text-slate-500 dark:text-slate-400">
+          共 {filteredPlayers.length} 人
+        </span>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {filteredPlayers.map((player) => (
+          <PlayerCard key={player.id} player={player} />
+        ))}
+      </div>
+
+      {filteredPlayers.length === 0 ? (
+        <GlassPanel className="mt-4 p-6 text-sm text-slate-500 dark:text-slate-400">
+          没有找到匹配球员，试试别的名字、城市或俱乐部关键词。
+        </GlassPanel>
+      ) : null}
+    </section>
+  );
+}
+
+function PlayersResultsFallback({ query }: { query: string }) {
+  return (
+    <section>
+      <div className="mb-4 flex items-end justify-between gap-4">
+        <div>
+          <p className="text-xs uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
+            搜索结果
+          </p>
+          <h2 className="mt-2 text-xl font-semibold text-slate-950 dark:text-white">
+            {query ? `匹配“${query}”的球员` : '全部收录球员'}
+          </h2>
+        </div>
+        <span className="text-sm text-slate-500 dark:text-slate-400">
+          正在加载...
+        </span>
+      </div>
+
+      <GlassPanel className="p-6 text-sm text-slate-500 dark:text-slate-400">
+        正在加载球员列表...
+      </GlassPanel>
+    </section>
   );
 }
