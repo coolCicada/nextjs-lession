@@ -8,7 +8,7 @@ import { GlassPanel } from '@/app/ui/app-shell';
 export default function Loading() {
   return (
     <PingPongShell
-      title="球员积分榜"
+      title="球员积分榜-骨架"
       subtitle="搜索球员、查看当前积分与等级分，并进入详情页查看走势与近期战绩。"
     >
       <div className="grid gap-8">
