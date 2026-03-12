@@ -16,7 +16,7 @@ export default function PlayersPage({
 }: {
   searchParams?: Promise<{ q?: string | string[] }>;
 }) {
-  const query = '123'
+  const query = ''
   const rr = searchPlayers(query).then((players) =>
     players.sort((left, right) => right.totalPoints - left.totalPoints),
   );
