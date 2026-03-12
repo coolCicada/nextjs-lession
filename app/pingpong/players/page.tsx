@@ -24,7 +24,7 @@ export default async function PlayersPage({
   const rr = searchPlayers(query).then((players) =>
     players.sort((left, right) => right.totalPoints - left.totalPoints),
   );
-  const playersPromise = new Promise((r) => setTimeout(r, 10000)).then(
+  const playersPromise = new Promise((r) => setTimeout(r, 5000)).then(
     () => rr,
   );
 
