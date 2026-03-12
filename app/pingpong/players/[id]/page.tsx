@@ -39,7 +39,7 @@ export default function PlayerDetailPage({
         <div className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
           <GlassPanel className="p-6">
             <p className="text-xs uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
-              Player profile
+              球员资料
             </p>
             <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 dark:text-white">
               {player.name}
@@ -49,26 +49,17 @@ export default function PlayerDetailPage({
             </p>
 
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              <ProfileStat
-                label="Current rating"
-                value={String(player.currentRating)}
-              />
-              <ProfileStat
-                label="Total points"
-                value={String(player.totalPoints)}
-              />
-              <ProfileStat label="City rank" value={`#${player.rank}`} />
-              <ProfileStat
-                label="Match form"
-                value={`${player.form.wins}-${player.form.losses}`}
-              />
-              <ProfileStat label="Hand" value={player.hand} />
-              <ProfileStat label="Style" value={player.style} />
+              <ProfileStat label="当前等级分" value={String(player.currentRating)} />
+              <ProfileStat label="总积分" value={String(player.totalPoints)} />
+              <ProfileStat label="城市排名" value={`#${player.rank}`} />
+              <ProfileStat label="近期战绩" value={`${player.form.wins} 胜 ${player.form.losses} 负`} />
+              <ProfileStat label="持拍手" value={player.hand} />
+              <ProfileStat label="打法" value={player.style} />
             </div>
 
             <div className="mt-6 rounded-[20px] border border-slate-200/80 bg-white/80 p-4 dark:border-white/10 dark:bg-white/5">
               <p className="text-xs uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">
-                Achievements
+                主要成绩
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
                 {player.achievements.map((achievement) => (
@@ -86,24 +77,12 @@ export default function PlayerDetailPage({
           <div className="grid gap-4">
             <GlassPanel className="p-5">
               <p className="text-xs uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
-                Points snapshot
+                积分快照
               </p>
               <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                <ProfileStat
-                  label="Rating gain"
-                  value={`+${summary.gain}`}
-                  compact
-                />
-                <ProfileStat
-                  label="Points gain"
-                  value={`+${summary.pointsGain}`}
-                  compact
-                />
-                <ProfileStat
-                  label="Latest event"
-                  value={summary.lastEvent}
-                  compact
-                />
+                <ProfileStat label="等级分提升" value={`+${summary.gain}`} compact />
+                <ProfileStat label="积分提升" value={`+${summary.pointsGain}`} compact />
+                <ProfileStat label="最近赛事" value={summary.lastEvent} compact />
               </div>
             </GlassPanel>
             <RatingTrend player={player} />
@@ -115,10 +94,10 @@ export default function PlayerDetailPage({
 
           <GlassPanel className="p-5">
             <p className="text-xs uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
-              Tournaments
+              参赛记录
             </p>
             <h3 className="mt-2 text-lg font-semibold text-slate-950 dark:text-white">
-              Visible entries
+              当前可见赛事
             </h3>
             <div className="mt-4 space-y-3">
               {nextEvents.map((tournament) => (

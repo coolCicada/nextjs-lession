@@ -40,15 +40,15 @@ export default function TournamentDetailPage({
         <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
           <GlassPanel className="p-6">
             <SectionTitle
-              eyebrow="Tournament Detail"
+              eyebrow="比赛详情"
               title={tournament.title}
               body={tournament.summary}
             />
             <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <DetailChip label="Date" value={tournament.date} />
-              <DetailChip label="Deadline" value={tournament.signupDeadline} />
-              <DetailChip label="Level" value={tournament.level} />
-              <DetailChip label="Entry fee" value={`RMB ${tournament.fee}`} />
+              <DetailChip label="比赛日期" value={tournament.date} />
+              <DetailChip label="报名截止" value={tournament.signupDeadline} />
+              <DetailChip label="比赛级别" value={tournament.level} />
+              <DetailChip label="报名费用" value={`￥${tournament.fee}`} />
             </div>
             <div className="mt-5 flex flex-wrap gap-2">
               {tournament.tags.map((tag) => (
@@ -75,14 +75,14 @@ export default function TournamentDetailPage({
             <div className="mb-4 flex items-end justify-between gap-4">
               <div>
                 <p className="text-xs uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
-                  Participants
+                  参赛名单
                 </p>
                 <h2 className="mt-2 text-xl font-semibold text-slate-950 dark:text-white">
-                  {participants.length} seeded entries
+                  共 {participants.length} 位种子/报名球员
                 </h2>
               </div>
               <span className="text-sm text-slate-500 dark:text-slate-400">
-                {tournament.organizer}
+                主办方：{tournament.organizer}
               </span>
             </div>
             <ParticipantList participants={participants} />
@@ -91,10 +91,10 @@ export default function TournamentDetailPage({
           <section>
             <div className="mb-4">
               <p className="text-xs uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
-                Schedule
+                赛程看板
               </p>
               <h2 className="mt-2 text-xl font-semibold text-slate-950 dark:text-white">
-                Match board
+                当前对阵情况
               </h2>
             </div>
             <MatchList matches={tournament.matches} />
@@ -105,7 +105,7 @@ export default function TournamentDetailPage({
           <div className="grid gap-8 lg:grid-cols-[0.8fr_1.2fr]">
             <GlassPanel className="p-6">
               <p className="text-xs uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
-                Featured seed
+                焦点球员
               </p>
               <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
                 {featuredPlayer.name}
@@ -114,16 +114,10 @@ export default function TournamentDetailPage({
                 {featuredPlayer.bio}
               </p>
               <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                <DetailChip
-                  label="Rating"
-                  value={String(featuredPlayer.currentRating)}
-                />
-                <DetailChip
-                  label="Points"
-                  value={String(featuredPlayer.totalPoints)}
-                />
-                <DetailChip label="Club" value={featuredPlayer.club} />
-                <DetailChip label="Style" value={featuredPlayer.style} />
+                <DetailChip label="等级分" value={String(featuredPlayer.currentRating)} />
+                <DetailChip label="积分" value={String(featuredPlayer.totalPoints)} />
+                <DetailChip label="俱乐部" value={featuredPlayer.club} />
+                <DetailChip label="打法" value={featuredPlayer.style} />
               </div>
             </GlassPanel>
             <RatingTrend player={featuredPlayer} />

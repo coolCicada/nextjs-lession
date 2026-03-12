@@ -80,7 +80,7 @@ export function SearchForm({
         type="submit"
         className="inline-flex h-12 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
       >
-        Search
+        搜索
       </button>
     </form>
   );
@@ -110,7 +110,7 @@ export function MetricCard({
 
 export function TournamentCard({ tournament }: { tournament: Tournament }) {
   const confirmedCount = tournament.participants.filter(
-    (participant) => participant.status === 'Confirmed',
+    (participant) => participant.status === '已确认',
   ).length;
 
   return (
@@ -135,10 +135,10 @@ export function TournamentCard({ tournament }: { tournament: Tournament }) {
         </div>
 
         <div className="mt-5 grid gap-3 text-sm text-slate-600 dark:text-slate-300 sm:grid-cols-2">
-          <InfoRow label="Venue" value={tournament.venue} />
-          <InfoRow label="Format" value={tournament.format} />
-          <InfoRow label="Level" value={tournament.level} />
-          <InfoRow label="Players" value={`${confirmedCount} confirmed`} />
+          <InfoRow label="场馆" value={tournament.venue} />
+          <InfoRow label="赛制" value={tournament.format} />
+          <InfoRow label="级别" value={tournament.level} />
+          <InfoRow label="报名人数" value={`${confirmedCount} 人已确认`} />
         </div>
 
         <div className="mt-5 flex flex-wrap gap-2">
@@ -167,9 +167,7 @@ export function MatchList({
         const playerA = getPlayerById(match.playerAId);
         const playerB = getPlayerById(match.playerBId);
 
-        if (!playerA || !playerB) {
-          return null;
-        }
+        if (!playerA || !playerB) return null;
 
         return (
           <GlassPanel key={match.id} className="p-4">
@@ -180,9 +178,7 @@ export function MatchList({
                   <span className="rounded-full border border-slate-200/80 px-2 py-1 text-[10px] dark:border-white/10">
                     {match.status}
                   </span>
-                  {match.tournamentTitle ? (
-                    <span>{match.tournamentTitle}</span>
-                  ) : null}
+                  {match.tournamentTitle ? <span>{match.tournamentTitle}</span> : null}
                 </div>
                 <div className="mt-3 flex items-center gap-3 text-base font-semibold text-slate-950 dark:text-white">
                   <span>{playerA.name}</span>
@@ -221,7 +217,7 @@ export function PlayerCard({ player }: { player: Player }) {
           </div>
           <div className="rounded-2xl border border-emerald-200/80 bg-emerald-50 px-3 py-2 text-right dark:border-emerald-400/20 dark:bg-emerald-500/10">
             <p className="text-[11px] uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-200">
-              Points
+              积分
             </p>
             <p className="text-xl font-semibold text-emerald-700 dark:text-emerald-100">
               {player.totalPoints}
@@ -230,23 +226,16 @@ export function PlayerCard({ player }: { player: Player }) {
         </div>
 
         <div className="mt-5 grid gap-3 text-sm text-slate-600 dark:text-slate-300 sm:grid-cols-2">
-          <InfoRow label="Rating" value={String(player.currentRating)} />
-          <InfoRow label="Rank" value={`#${player.rank}`} />
-          <InfoRow label="Style" value={player.style} />
-          <InfoRow
-            label="Form"
-            value={`${player.form.wins}-${player.form.losses}`}
-          />
+          <InfoRow label="等级分" value={String(player.currentRating)} />
+          <InfoRow label="排名" value={`#${player.rank}`} />
+          <InfoRow label="打法" value={player.style} />
+          <InfoRow label="近期战绩" value={`${player.form.wins} 胜 ${player.form.losses} 负`} />
         </div>
 
         <div className="mt-5 rounded-2xl border border-slate-200/80 bg-white/80 p-4 dark:border-white/10 dark:bg-white/5">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-slate-500 dark:text-slate-400">
-              Recent rating gain
-            </span>
-            <span className="font-medium text-slate-950 dark:text-white">
-              +{summary.gain}
-            </span>
+            <span className="text-slate-500 dark:text-slate-400">近期等级分提升</span>
+            <span className="font-medium text-slate-950 dark:text-white">+{summary.gain}</span>
           </div>
           <div className="mt-3 h-2 rounded-full bg-slate-200/80 dark:bg-white/10">
             <div
@@ -280,8 +269,7 @@ export function ParticipantList({
               {participant.seed}. {participant.player.name}
             </Link>
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              {participant.player.city} · {participant.player.currentRating}{' '}
-              rating · {participant.player.totalPoints} pts
+              {participant.player.city} · {participant.player.currentRating} 等级分 · {participant.player.totalPoints} 积分
             </p>
           </div>
           <span className="rounded-full border border-slate-200/80 px-3 py-1 text-xs text-slate-500 dark:border-white/10 dark:text-slate-300">
@@ -315,14 +303,14 @@ export function RatingTrend({ player }: { player: Player }) {
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-xs uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
-            Rating Trend
+            等级分走势
           </p>
           <h3 className="mt-2 text-lg font-semibold text-slate-950 dark:text-white">
-            Last 6 events
+            最近 6 场赛事
           </h3>
         </div>
         <div className="text-right">
-          <p className="text-xs text-slate-500 dark:text-slate-400">Current</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">当前</p>
           <p className="text-xl font-semibold text-slate-950 dark:text-white">
             {player.currentRating}
           </p>
@@ -379,20 +367,20 @@ export function RatingHistoryTable({ player }: { player: Player }) {
       <div className="flex items-center justify-between">
         <div>
           <p className="text-xs uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
-            History
+            历史记录
           </p>
           <h3 className="mt-2 text-lg font-semibold text-slate-950 dark:text-white">
-            Recent rating log
+            最近等级分日志
           </h3>
         </div>
       </div>
 
       <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200/80 dark:border-white/10">
         <div className="grid grid-cols-[1fr_1fr_0.8fr_0.8fr] bg-slate-50 px-4 py-3 text-xs font-medium uppercase tracking-[0.14em] text-slate-400 dark:bg-white/5 dark:text-slate-500">
-          <span>Date</span>
-          <span>Event</span>
-          <span>Rating</span>
-          <span>Delta</span>
+          <span>日期</span>
+          <span>赛事</span>
+          <span>等级分</span>
+          <span>变化</span>
         </div>
         {player.ratingHistory
           .slice()
@@ -427,16 +415,16 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 }
 
 function formatDate(value: string) {
-  return new Intl.DateTimeFormat('en', {
-    month: 'short',
+  return new Intl.DateTimeFormat('zh-CN', {
+    month: 'numeric',
     day: 'numeric',
     year: 'numeric',
   }).format(new Date(value));
 }
 
 function formatShortDate(value: string) {
-  return new Intl.DateTimeFormat('en', {
-    month: 'short',
+  return new Intl.DateTimeFormat('zh-CN', {
+    month: 'numeric',
     day: 'numeric',
   }).format(new Date(value));
 }
