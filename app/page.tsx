@@ -64,15 +64,15 @@ export default function HomePage() {
         >
           <div className="flex items-start justify-between gap-4">
             <div>
-              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/60 bg-white/65 px-3 py-1 text-xs font-medium text-slate-500 backdrop-blur-xl dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-slate-200/80 bg-white px-3 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
                 <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_18px_rgba(52,211,153,0.8)]" />
                 系统在线 · 工作台
               </div>
-              <h1 className="text-3xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-5xl">
+              <h1 className="text-3xl font-semibold tracking-[-0.04em] text-slate-950 dark:text-white sm:text-5xl">
                 OpenClaw
               </h1>
-              <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-500 dark:text-slate-400 sm:text-base">
-                更像产品首页的轻工作台。这里放你最常用的入口、沉淀内容和对话快捷操作。
+              <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-500 dark:text-slate-400 sm:text-base">
+                更接近前沿产品的克制工作台：首页承载入口、沉淀内容与高频操作，但不过度装饰。
               </p>
             </div>
             <ThemeToggle />
@@ -88,8 +88,8 @@ export default function HomePage() {
                 </p>
                 <h2 className="mt-2 text-xl font-semibold text-slate-900 dark:text-white">常用入口</h2>
               </div>
-              <div className="rounded-2xl border border-white/60 bg-white/70 px-3 py-2 text-xs text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
-                亮 / 暗主题已启用
+              <div className="rounded-2xl border border-slate-200/80 bg-white px-3 py-2 text-xs text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
+                Light / Dark
               </div>
             </div>
 
@@ -103,11 +103,11 @@ export default function HomePage() {
                 >
                   <Link
                     href={feature.href}
-                    className={`group relative block overflow-hidden rounded-[28px] border ${feature.border} bg-gradient-to-br ${feature.accent} p-5 transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_24px_50px_rgba(15,23,42,0.12)] dark:hover:shadow-[0_24px_50px_rgba(0,0,0,0.28)]`}
+                    className={`group relative block overflow-hidden rounded-[24px] border ${feature.border} bg-gradient-to-br ${feature.accent} p-5 transition duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_12px_30px_rgba(15,23,42,0.06)] dark:hover:border-white/12 dark:hover:shadow-[0_16px_36px_rgba(0,0,0,0.22)]`}
                   >
-                    <div className="absolute inset-0 bg-white/55 dark:bg-slate-950/10" />
+                    <div className="absolute inset-0 bg-white/72 dark:bg-slate-950/18" />
                     <div className="relative">
-                      <div className={`mb-6 inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-white/50 bg-white/75 text-2xl shadow-sm dark:border-white/10 dark:bg-white/10 ${feature.text}`}>
+                      <div className={`mb-6 inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-200/80 bg-white text-2xl shadow-sm dark:border-white/10 dark:bg-white/10 ${feature.text}`}>
                         {feature.icon}
                       </div>
                       <h3 className="text-lg font-semibold text-slate-900 dark:text-white">{feature.title}</h3>
@@ -127,7 +127,7 @@ export default function HomePage() {
                 {quickActions.map((action) => (
                   <div
                     key={action.label}
-                    className="flex items-center justify-between rounded-2xl border border-white/60 bg-white/60 px-4 py-3 dark:border-white/10 dark:bg-white/5"
+                    className="flex items-center justify-between rounded-2xl border border-slate-200/80 bg-white px-4 py-3 dark:border-white/10 dark:bg-white/5"
                   >
                     <span className="text-sm text-slate-600 dark:text-slate-200">{action.label}</span>
                     <span className="rounded-full bg-slate-900 px-3 py-1 text-xs font-medium text-white dark:bg-white dark:text-slate-900">
@@ -150,8 +150,8 @@ export default function HomePage() {
                     <div className="h-2 w-[78%] rounded-full bg-gradient-to-r from-sky-400 to-violet-500" />
                   </div>
                 </div>
-                <div className="rounded-2xl border border-white/60 bg-white/60 p-4 text-sm leading-6 text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-400">
-                  这版首页重点做了：更强层级、柔和玻璃感、可切换亮暗主题，以及更接近前沿 SaaS 的信息密度。
+                <div className="rounded-2xl border border-slate-200/80 bg-white p-4 text-sm leading-6 text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-400">
+                  这版首页把视觉语言往 Linear / Raycast / Vercel 的方向收了：更克制、更清爽、留白更稳定。
                 </div>
               </div>
             </GlassPanel>

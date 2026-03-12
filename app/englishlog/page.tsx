@@ -77,10 +77,10 @@ export default function EnglishlogPage() {
             还没有英文学习记录
           </GlassPanel>
         ) : (
-          <div className="space-y-4">
+          <div className="flex flex-col gap-5">
             {items.map((item) => (
-              <Link key={item.id} href={`/englishlog/${item.id}`}>
-                <GlassPanel className="group p-5 transition duration-300 hover:-translate-y-0.5 hover:border-emerald-200/70 hover:shadow-[0_22px_50px_rgba(16,185,129,0.12)] dark:hover:border-emerald-500/20 dark:hover:shadow-[0_22px_50px_rgba(0,0,0,0.3)] sm:p-6">
+              <Link key={item.id} href={`/englishlog/${item.id}`} className="block">
+                <GlassPanel className="group p-6 transition duration-200 hover:-translate-y-0.5 hover:border-slate-300/80 hover:shadow-[0_12px_30px_rgba(15,23,42,0.06)] dark:hover:border-white/12 dark:hover:shadow-[0_14px_36px_rgba(0,0,0,0.22)] sm:p-7">
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0">
                       <div className="mb-3 inline-flex rounded-full border border-emerald-200/70 bg-emerald-50/90 px-3 py-1 text-[11px] font-medium text-emerald-600 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300">
