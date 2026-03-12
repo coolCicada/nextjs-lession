@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { AppBackground, AppHeader, GlassPanel } from '@/app/ui/app-shell';
+import PingPongBottomNav from '@/app/pingpong/_components/pingpong-bottom-nav';
 import {
   Player,
   Tournament,
@@ -24,9 +25,10 @@ export function PingPongShell({
       <AppBackground />
       <div className="relative z-10">
         <AppHeader title={title} subtitle={subtitle} backHref="/" />
-        <main className="mx-auto max-w-6xl px-5 py-8 sm:px-6 lg:px-8">
+        <main className="mx-auto max-w-6xl px-5 py-8 pb-28 sm:px-6 lg:px-8 lg:pb-8">
           {children}
         </main>
+        <PingPongBottomNav />
       </div>
     </div>
   );
