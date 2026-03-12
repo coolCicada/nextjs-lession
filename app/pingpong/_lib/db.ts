@@ -301,6 +301,7 @@ export async function deletePingPongSession(sessionToken?: string) {
 }
 
 export async function searchPlayers(query: string) {
+  await new Promise((r) => setTimeout(r, 10000))
   const players = await fetchAllPlayers();
   const normalized = query.trim().toLowerCase();
 
