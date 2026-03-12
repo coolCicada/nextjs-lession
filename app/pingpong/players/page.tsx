@@ -11,16 +11,12 @@ import { GlassPanel } from '@/app/ui/app-shell';
 
 // export const dynamic = 'force-dynamic';
 
-export default async function PlayersPage({
+export default function PlayersPage({
   searchParams,
 }: {
   searchParams?: Promise<{ q?: string | string[] }>;
 }) {
-  const resolvedSearchParams = await searchParams;
-  const query =
-    typeof resolvedSearchParams?.q === 'string'
-      ? resolvedSearchParams.q.trim()
-      : '';
+  const query = '123'
   const rr = searchPlayers(query).then((players) =>
     players.sort((left, right) => right.totalPoints - left.totalPoints),
   );
