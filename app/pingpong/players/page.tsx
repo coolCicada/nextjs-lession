@@ -22,10 +22,11 @@ export default async function PlayersPage({
       ? resolvedSearchParams.q.trim()
       : '';
   const rr = searchPlayers(query).then((players) =>
-      players.sort((left, right) => right.totalPoints - left.totalPoints)
-    )   
-  const playersPromise = new Promise((r) => setTimeout(r, 10000))
-    .then(()=> rr)
+    players.sort((left, right) => right.totalPoints - left.totalPoints),
+  );
+  const playersPromise = new Promise((r) => setTimeout(r, 10000)).then(
+    () => rr,
+  );
 
   return (
     <PingPongShell

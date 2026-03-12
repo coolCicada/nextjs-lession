@@ -21,12 +21,12 @@ const FormSchema = z.object({
 const CreateInvoice = FormSchema.omit({ id: true, date: true });
 
 export async function createInvoice(formData: FormData) {
-  console.log(formData)
+  console.log(formData);
   const { customerId, amount, status } = CreateInvoice.parse({
-      customerId: formData.get('customerId'),
-      amount: formData.get('amount'),
-      status: formData.get('status'),
-    });
+    customerId: formData.get('customerId'),
+    amount: formData.get('amount'),
+    status: formData.get('status'),
+  });
   const amountInCents = amount * 100;
   const date = new Date().toISOString().split('T')[0];
   await sql`
@@ -64,9 +64,10 @@ export async function deleteInvoice(id: string) {
   try {
     await sql`DELETE FROM invoices WHERE id = ${id}`;
     revalidatePath('/dashboard/invoices');
-    return { message: 'Deleted Invoice.' };
   } catch (error) {
-    return { message: 'Database Error: Failed to Delete Invoice.' };
+    throw new Error('Database Error: Failed to Delete Invoice.', {
+      cause: error,
+    });
   }
 }
 
