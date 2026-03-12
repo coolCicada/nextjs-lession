@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { AppBackground, AppHeader, GlassPanel } from "@/app/ui/app-shell";
 
 type EnglishItem = {
   id: string;
@@ -61,43 +62,46 @@ export default function EnglishlogPage() {
       .catch(() => setLoading(false));
   }, [router]);
 
-  if (loading) {
-    return <div className="min-h-screen bg-gradient-to-br from-slate-50 to-gray-50 flex items-center justify-center"><span className="text-slate-400 text-sm">加载中</span></div>;
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-50 text-slate-600">
-      <header className="sticky top-0 bg-white/70 backdrop-blur-xl border-b border-slate-100">
-        <div className="max-w-3xl mx-auto px-6 py-5 flex items-center gap-3">
-          <Link href="/" className="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white shadow-lg shadow-emerald-200">←</Link>
-          <div>
-            <h1 className="text-xl font-semibold text-slate-800">英文学习记录</h1>
-            <p className="text-xs text-slate-400 mt-0.5">这里专门收每日英语与后续英语学习沉淀</p>
-          </div>
-        </div>
-      </header>
+    <div className="relative min-h-screen overflow-hidden text-slate-700 dark:text-slate-100">
+      <AppBackground />
+      <AppHeader title="英文学习记录" subtitle="这里专门收每日英语与后续英语学习沉淀" />
 
-      <main className="max-w-3xl mx-auto px-6 py-8">
-        {items.length === 0 ? (
-          <div className="text-center py-20 text-slate-400">还没有英文学习记录</div>
+      <main className="relative z-10 mx-auto max-w-4xl px-5 py-6 sm:px-6 sm:py-8">
+        {loading ? (
+          <GlassPanel className="flex min-h-[260px] items-center justify-center p-10 text-sm text-slate-400 dark:text-slate-500">
+            加载中
+          </GlassPanel>
+        ) : items.length === 0 ? (
+          <GlassPanel className="p-10 text-center text-slate-400 dark:text-slate-500">
+            还没有英文学习记录
+          </GlassPanel>
         ) : (
           <div className="space-y-4">
             {items.map((item) => (
-              <Link key={item.id} href={`/englishlog/${item.id}`} className="block bg-white/70 border border-slate-100 rounded-2xl p-5 shadow-sm transition hover:shadow-md hover:border-emerald-100">
-                <div className="flex items-center justify-between gap-4">
-                  <div className="min-w-0">
-                    <div className="mb-2 inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-medium text-emerald-600 ring-1 ring-emerald-100">
-                      {getEnglishTypeLabel(item.recordType)}
+              <Link key={item.id} href={`/englishlog/${item.id}`}>
+                <GlassPanel className="group p-5 transition duration-300 hover:-translate-y-0.5 hover:border-emerald-200/70 hover:shadow-[0_22px_50px_rgba(16,185,129,0.12)] dark:hover:border-emerald-500/20 dark:hover:shadow-[0_22px_50px_rgba(0,0,0,0.3)] sm:p-6">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <div className="mb-3 inline-flex rounded-full border border-emerald-200/70 bg-emerald-50/90 px-3 py-1 text-[11px] font-medium text-emerald-600 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300">
+                        {getEnglishTypeLabel(item.recordType)}
+                      </div>
+                      <h2 className="text-lg font-semibold tracking-tight text-slate-900 transition group-hover:text-emerald-600 dark:text-white dark:group-hover:text-emerald-300">
+                        {item.title}
+                      </h2>
                     </div>
-                    <h2 className="text-base font-medium text-slate-800">{item.title}</h2>
+                    <span className="whitespace-nowrap text-xs text-slate-400 dark:text-slate-500">{formatTime(item.createdAt)}</span>
                   </div>
-                  <span className="text-[11px] text-slate-400 whitespace-nowrap">{formatTime(item.createdAt)}</span>
-                </div>
-                <p className="text-sm text-slate-600 mt-3 whitespace-pre-wrap leading-6 line-clamp-3">{item.content}</p>
-                <div className="mt-3 flex items-center justify-between gap-3 text-[11px] text-slate-400">
-                  <span>来源：{item.source} · 触发：{item.syncedFrom}</span>
-                  <span className="text-emerald-500">查看详情 →</span>
-                </div>
+
+                  <p className="mt-4 line-clamp-3 whitespace-pre-wrap text-sm leading-7 text-slate-500 dark:text-slate-400">
+                    {item.content}
+                  </p>
+
+                  <div className="mt-5 flex items-center justify-between gap-3 text-xs text-slate-400 dark:text-slate-500">
+                    <span>来源：{item.source} · 触发：{item.syncedFrom}</span>
+                    <span className="font-medium text-emerald-500 dark:text-emerald-300">查看详情 →</span>
+                  </div>
+                </GlassPanel>
               </Link>
             ))}
           </div>

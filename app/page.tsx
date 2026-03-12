@@ -2,178 +2,161 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
+import { AppBackground, GlassPanel } from "@/app/ui/app-shell";
+import ThemeToggle from "@/app/ui/theme-toggle";
 
 const features = [
   {
     href: "/worklog",
     title: "待办",
-    desc: "对话驱动的任务追踪",
+    desc: "对话驱动的任务追踪与沉淀",
     icon: "◐",
-    gradient: "from-sky-100 to-blue-50",
-    border: "border-sky-200",
-    text: "text-sky-600",
-    shadow: "shadow-sky-100",
-  },
-  {
-    href: "/ranking",
-    title: "排行",
-    desc: "实时更新的排行榜",
-    icon: "◑",
-    gradient: "from-amber-100 to-orange-50",
-    border: "border-amber-200",
-    text: "text-amber-600",
-    shadow: "shadow-amber-100",
-  },
-  {
-    href: "/fortune",
-    title: "运势",
-    desc: "每日运势测算",
-    icon: "✦",
-    gradient: "from-rose-100 to-pink-50",
-    border: "border-rose-200",
-    text: "text-rose-600",
-    shadow: "shadow-rose-100",
+    accent: "from-sky-400/20 to-cyan-300/10",
+    border: "border-sky-200/70 dark:border-sky-500/20",
+    text: "text-sky-600 dark:text-sky-300",
   },
   {
     href: "/newslog",
     title: "新闻库",
-    desc: "分析结果沉淀与回看",
+    desc: "财经与分析结果回看",
     icon: "◉",
-    gradient: "from-violet-100 to-purple-50",
-    border: "border-violet-200",
-    text: "text-violet-600",
-    shadow: "shadow-violet-100",
+    accent: "from-violet-400/20 to-fuchsia-300/10",
+    border: "border-violet-200/70 dark:border-violet-500/20",
+    text: "text-violet-600 dark:text-violet-300",
   },
   {
     href: "/englishlog",
     title: "英语库",
     desc: "每日英语与学习沉淀",
     icon: "✎",
-    gradient: "from-emerald-100 to-teal-50",
-    border: "border-emerald-200",
-    text: "text-emerald-600",
-    shadow: "shadow-emerald-100",
+    accent: "from-emerald-400/20 to-teal-300/10",
+    border: "border-emerald-200/70 dark:border-emerald-500/20",
+    text: "text-emerald-600 dark:text-emerald-300",
+  },
+  {
+    href: "/fortune",
+    title: "运势",
+    desc: "轻量的每日状态入口",
+    icon: "✦",
+    accent: "from-rose-400/20 to-orange-300/10",
+    border: "border-rose-200/70 dark:border-rose-500/20",
+    text: "text-rose-600 dark:text-rose-300",
   },
 ];
 
 const quickActions = [
-  { label: "同步待办", cmd: "#sync-to-log", bg: "bg-emerald-50", border: "border-emerald-200", text: "text-emerald-600" },
-  { label: "同步新闻", cmd: "#sync-news", bg: "bg-violet-50", border: "border-violet-200", text: "text-violet-600" },
-  { label: "添加提醒", cmd: "提醒我...", bg: "bg-amber-50", border: "border-amber-200", text: "text-amber-600" },
+  { label: "同步待办", cmd: "#sync-to-log" },
+  { label: "同步新闻", cmd: "#sync-news" },
+  { label: "添加提醒", cmd: "提醒我..." },
 ];
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-50 text-slate-600 overflow-hidden">
-      {/* 柔和光晕背景 */}
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-[500px] h-[500px] bg-sky-200/30 rounded-full blur-[100px]" />
-        <div className="absolute top-1/3 -left-40 w-[400px] h-[400px] bg-violet-200/30 rounded-full blur-[80px]" />
-        <div className="absolute -bottom-40 right-1/3 w-[600px] h-[600px] bg-rose-200/20 rounded-full blur-[120px]" />
-      </div>
+    <div className="relative min-h-screen overflow-hidden text-slate-700 dark:text-slate-100">
+      <AppBackground />
 
-      {/* 内容容器 */}
-      <div className="relative z-10 max-w-md mx-auto px-6 min-h-screen flex flex-col">
-        
-        {/* Header */}
+      <div className="relative z-10 mx-auto flex min-h-screen max-w-5xl flex-col px-5 pb-10 pt-8 sm:px-6 lg:px-8">
         <motion.header
-          initial={{ opacity: 0, y: -20 }}
+          initial={{ opacity: 0, y: -16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="pt-16 pb-10"
+          transition={{ duration: 0.45 }}
+          className="mb-8"
         >
-          <div className="flex items-center gap-4 mb-3">
-            <div className="w-12 h-12 rounded-2xl bg-white shadow-lg shadow-slate-200/50 flex items-center justify-center text-xl border border-slate-100">
-              <span className="bg-gradient-to-br from-sky-500 to-violet-500 bg-clip-text text-transparent">◈</span>
-            </div>
+          <div className="flex items-start justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-medium tracking-tight text-slate-800">
+              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/60 bg-white/65 px-3 py-1 text-xs font-medium text-slate-500 backdrop-blur-xl dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
+                <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_18px_rgba(52,211,153,0.8)]" />
+                系统在线 · 工作台
+              </div>
+              <h1 className="text-3xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-5xl">
                 OpenClaw
               </h1>
-              <p className="text-sm text-slate-400">
-                智能助理
+              <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-500 dark:text-slate-400 sm:text-base">
+                更像产品首页的轻工作台。这里放你最常用的入口、沉淀内容和对话快捷操作。
               </p>
             </div>
+            <ThemeToggle />
           </div>
         </motion.header>
 
-        {/* 主功能卡片 */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="space-y-3 mb-10"
-        >
-          <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-4 px-1">
-            功能
-          </p>
-          
-          <div className="grid grid-cols-2 gap-3">
-            {features.map((feature, i) => (
-              <motion.div
-                key={feature.href}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.4, delay: 0.3 + i * 0.08 }}
-              >
-                <Link
-                  href={feature.href}
-                  className={`group flex flex-col items-center text-center p-5 rounded-3xl bg-gradient-to-b ${feature.gradient} border ${feature.border} shadow-sm ${feature.shadow} backdrop-blur-sm transition-all active:scale-95 hover:shadow-md`}
+        <div className="grid gap-6 lg:grid-cols-[1.3fr_0.7fr]">
+          <GlassPanel className="p-5 sm:p-6">
+            <div className="mb-5 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
+                  Core Entry
+                </p>
+                <h2 className="mt-2 text-xl font-semibold text-slate-900 dark:text-white">常用入口</h2>
+              </div>
+              <div className="rounded-2xl border border-white/60 bg-white/70 px-3 py-2 text-xs text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
+                亮 / 暗主题已启用
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              {features.map((feature, index) => (
+                <motion.div
+                  key={feature.href}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.35, delay: 0.08 * index }}
                 >
-                  <span className={`text-3xl mb-3 ${feature.text}`}>{feature.icon}</span>
-                  <h3 className="text-slate-700 font-medium mb-1">{feature.title}</h3>
-                  <p className="text-[11px] text-slate-500">{feature.desc}</p>
-                </Link>
-              </motion.div>
-            ))}
-          </div>
-        </motion.section>
+                  <Link
+                    href={feature.href}
+                    className={`group relative block overflow-hidden rounded-[28px] border ${feature.border} bg-gradient-to-br ${feature.accent} p-5 transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_24px_50px_rgba(15,23,42,0.12)] dark:hover:shadow-[0_24px_50px_rgba(0,0,0,0.28)]`}
+                  >
+                    <div className="absolute inset-0 bg-white/55 dark:bg-slate-950/10" />
+                    <div className="relative">
+                      <div className={`mb-6 inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-white/50 bg-white/75 text-2xl shadow-sm dark:border-white/10 dark:bg-white/10 ${feature.text}`}>
+                        {feature.icon}
+                      </div>
+                      <h3 className="text-lg font-semibold text-slate-900 dark:text-white">{feature.title}</h3>
+                      <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">{feature.desc}</p>
+                      <div className={`mt-5 text-sm font-medium ${feature.text}`}>进入 →</div>
+                    </div>
+                  </Link>
+                </motion.div>
+              ))}
+            </div>
+          </GlassPanel>
 
-        {/* 快捷指令 */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.5 }}
-          className="mb-10"
-        >
-          <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-4 px-1">
-            快捷指令
-          </p>
-          
-          <div className="space-y-2">
-            {quickActions.map((action, i) => (
-              <motion.div
-                key={action.label}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.3, delay: 0.6 + i * 0.05 }}
-                className={`flex items-center justify-between p-4 rounded-2xl ${action.bg} border ${action.border}`}
-              >
-                <span className="text-sm text-slate-600">{action.label}</span>
-                <span className={`text-xs font-medium ${action.text} px-3 py-1.5 rounded-full bg-white/60`}>
-                  {action.cmd}
-                </span>
-              </motion.div>
-            ))}
-          </div>
-        </motion.section>
+          <div className="grid gap-6">
+            <GlassPanel className="p-5 sm:p-6">
+              <p className="text-xs font-medium uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">Quick Actions</p>
+              <div className="mt-4 space-y-3">
+                {quickActions.map((action) => (
+                  <div
+                    key={action.label}
+                    className="flex items-center justify-between rounded-2xl border border-white/60 bg-white/60 px-4 py-3 dark:border-white/10 dark:bg-white/5"
+                  >
+                    <span className="text-sm text-slate-600 dark:text-slate-200">{action.label}</span>
+                    <span className="rounded-full bg-slate-900 px-3 py-1 text-xs font-medium text-white dark:bg-white dark:text-slate-900">
+                      {action.cmd}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </GlassPanel>
 
-        {/* 底部状态 */}
-        <motion.footer
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.8 }}
-          className="mt-auto pb-8"
-        >
-          <div className="flex items-center justify-center gap-2 text-xs text-slate-400">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span>系统运行中</span>
+            <GlassPanel className="p-5 sm:p-6">
+              <p className="text-xs font-medium uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">Status</p>
+              <div className="mt-4 space-y-4">
+                <div>
+                  <div className="mb-2 flex items-center justify-between text-sm">
+                    <span className="text-slate-500 dark:text-slate-400">内容工作流</span>
+                    <span className="font-medium text-slate-900 dark:text-white">稳定</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-slate-200/80 dark:bg-white/10">
+                    <div className="h-2 w-[78%] rounded-full bg-gradient-to-r from-sky-400 to-violet-500" />
+                  </div>
+                </div>
+                <div className="rounded-2xl border border-white/60 bg-white/60 p-4 text-sm leading-6 text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-400">
+                  这版首页重点做了：更强层级、柔和玻璃感、可切换亮暗主题，以及更接近前沿 SaaS 的信息密度。
+                </div>
+              </div>
+            </GlassPanel>
           </div>
-          
-          <p className="text-center text-[11px] text-slate-300 mt-6">
-            OpenClaw · 智能助理
-          </p>
-        </motion.footer>
+        </div>
       </div>
     </div>
   );

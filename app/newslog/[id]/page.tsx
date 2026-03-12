@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
+import { AppBackground, AppHeader, GlassPanel } from "@/app/ui/app-shell";
 
 type NewsItem = {
   id: string;
@@ -73,53 +74,46 @@ export default function NewsDetailPage() {
       .catch(() => setLoading(false));
   }, [params.id, router]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-gray-50 flex items-center justify-center">
-        <span className="text-slate-400 text-sm">加载中</span>
-      </div>
-    );
-  }
-
-  if (!item) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-50 text-slate-600">
-        <div className="max-w-3xl mx-auto px-6 py-12">
-          <Link href="/newslog" className="text-sm text-sky-500">← 返回新闻列表</Link>
-          <div className="mt-8 rounded-2xl border border-slate-100 bg-white/80 p-8 text-center text-slate-400">
-            没找到这条记录
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-50 text-slate-600">
-      <header className="sticky top-0 bg-white/70 backdrop-blur-xl border-b border-slate-100">
-        <div className="max-w-3xl mx-auto px-6 py-5">
-          <Link href="/newslog" className="text-sm text-sky-500">← 返回新闻列表</Link>
-        </div>
-      </header>
+    <div className="relative min-h-screen overflow-hidden text-slate-700 dark:text-slate-100">
+      <AppBackground />
+      <AppHeader title={item?.title || "新闻详情"} subtitle="回看完整内容与来源上下文" backHref="/newslog" />
 
-      <main className="max-w-3xl mx-auto px-6 py-8">
-        <article className="bg-white/80 border border-slate-100 rounded-3xl p-6 shadow-sm">
-          <div className="flex items-start justify-between gap-4">
-            <h1 className="text-2xl font-semibold text-slate-800 leading-9">{item.title}</h1>
-            <span className="text-xs text-slate-400 whitespace-nowrap">{formatTime(item.createdAt)}</span>
-          </div>
+      <main className="relative z-10 mx-auto max-w-4xl px-5 py-6 sm:px-6 sm:py-8">
+        {loading ? (
+          <GlassPanel className="flex min-h-[260px] items-center justify-center p-10 text-sm text-slate-400 dark:text-slate-500">加载中</GlassPanel>
+        ) : !item ? (
+          <GlassPanel className="p-10 text-center text-slate-400 dark:text-slate-500">没找到这条记录</GlassPanel>
+        ) : (
+          <GlassPanel className="p-6 sm:p-8">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="min-w-0">
+                <div className="mb-3 inline-flex rounded-full border border-sky-200/70 bg-sky-50/90 px-3 py-1 text-[11px] font-medium text-sky-600 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-300">
+                  {getNewsTypeLabel(item.recordType)}
+                </div>
+                <h1 className="text-2xl font-semibold leading-10 tracking-tight text-slate-950 dark:text-white sm:text-3xl">
+                  {item.title}
+                </h1>
+              </div>
+              <span className="whitespace-nowrap text-xs text-slate-400 dark:text-slate-500">{formatTime(item.createdAt)}</span>
+            </div>
 
-          <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-slate-400">
-            <span className="inline-flex rounded-full bg-sky-50 px-2.5 py-1 font-medium text-sky-600 ring-1 ring-sky-100">
-              {getNewsTypeLabel(item.recordType)}
-            </span>
-            <span>来源：{item.source} · 触发：{item.syncedFrom}</span>
-          </div>
+            <div className="mt-5 flex flex-wrap items-center gap-2 text-xs text-slate-400 dark:text-slate-500">
+              <span className="rounded-full border border-white/60 bg-white/60 px-3 py-1 dark:border-white/10 dark:bg-white/5">来源：{item.source}</span>
+              <span className="rounded-full border border-white/60 bg-white/60 px-3 py-1 dark:border-white/10 dark:bg-white/5">触发：{item.syncedFrom}</span>
+            </div>
 
-          <div className="mt-6 whitespace-pre-wrap text-[15px] leading-8 text-slate-700">
-            {item.content}
-          </div>
-        </article>
+            <div className="mt-8 whitespace-pre-wrap text-[15px] leading-8 text-slate-600 dark:text-slate-300">
+              {item.content}
+            </div>
+
+            <div className="mt-8">
+              <Link href="/newslog" className="text-sm font-medium text-sky-600 transition hover:text-sky-500 dark:text-sky-300 dark:hover:text-sky-200">
+                ← 返回新闻列表
+              </Link>
+            </div>
+          </GlassPanel>
+        )}
       </main>
     </div>
   );
