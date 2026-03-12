@@ -11,16 +11,17 @@ import { GlassPanel } from '@/app/ui/app-shell';
 
 export const dynamic = 'force-dynamic';
 
-export default async function PlayersPage({
+export default function PlayersPage({
   searchParams,
 }: {
   searchParams?: Promise<{ q?: string | string[] }>;
 }) {
-  const resolvedSearchParams = await searchParams;
-  const query =
-    typeof resolvedSearchParams?.q === 'string'
-      ? resolvedSearchParams.q.trim()
-      : '';
+  // const resolvedSearchParams = await searchParams;
+  // const query =
+  //   typeof resolvedSearchParams?.q === 'string'
+  //     ? resolvedSearchParams.q.trim()
+  //     : '';
+  const query = '123';
 
   return (
     <PingPongShell
@@ -37,7 +38,7 @@ export default async function PlayersPage({
           <div className="mt-5">
             <SearchForm
               action="/pingpong/players"
-              defaultValue={query}
+              defaultValue={'query'}
               placeholder="按球员姓名、城市或俱乐部搜索"
             />
           </div>
