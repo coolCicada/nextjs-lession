@@ -11,6 +11,39 @@ import {
 import { formatCurrency } from './utils';
 import { unstable_noStore as noStore } from 'next/cache';
 
+const revenueFallback: Revenue[] = [
+  { month: 'Jan', revenue: 2200 },
+  { month: 'Feb', revenue: 3100 },
+  { month: 'Mar', revenue: 2800 },
+  { month: 'Apr', revenue: 3600 },
+  { month: 'May', revenue: 3900 },
+  { month: 'Jun', revenue: 4200 },
+];
+
+const latestInvoicesFallback: LatestInvoiceRaw[] = [
+  {
+    id: 'fallback-1',
+    name: 'Offline Demo Co.',
+    image_url: '/customers/lee-robinson.png',
+    email: 'offline@example.com',
+    amount: 24500,
+  },
+  {
+    id: 'fallback-2',
+    name: 'Local Seed Ltd.',
+    image_url: '/customers/delba-de-oliveira.png',
+    email: 'seed@example.com',
+    amount: 16800,
+  },
+];
+
+const cardFallback = {
+  numberOfCustomers: 24,
+  numberOfInvoices: 48,
+  totalPaidInvoices: formatCurrency(684000),
+  totalPendingInvoices: formatCurrency(153000),
+};
+
 export async function fetchRevenue() {
   // Add noStore() here prevent the response from being cached.
   // This is equivalent to in fetch(..., {cache: 'no-store'}).
@@ -28,7 +61,7 @@ export async function fetchRevenue() {
     return data.rows;
   } catch (error) {
     console.error('Database Error:', error);
-    throw new Error('Failed to fetch revenue data.');
+    return revenueFallback;
   }
 }
 
@@ -48,7 +81,10 @@ export async function fetchLatestInvoices() {
     return latestInvoices;
   } catch (error) {
     console.error('Database Error:', error);
-    throw new Error('Failed to fetch the latest invoices.');
+    return latestInvoicesFallback.map((invoice) => ({
+      ...invoice,
+      amount: formatCurrency(invoice.amount),
+    }));
   }
 }
 
@@ -83,7 +119,7 @@ export async function fetchCardData() {
     };
   } catch (error) {
     console.error('Database Error:', error);
-    throw new Error('Failed to fetch card data.');
+    return cardFallback;
   }
 }
 

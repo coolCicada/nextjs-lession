@@ -42,6 +42,15 @@ const features = [
     border: "border-rose-200/70 dark:border-rose-500/20",
     text: "text-rose-600 dark:text-rose-300",
   },
+  {
+    href: "/pingpong",
+    title: "开球站",
+    desc: "比赛、球员积分、搜索与报名",
+    icon: "🏓",
+    accent: "from-indigo-400/20 to-sky-300/10",
+    border: "border-indigo-200/70 dark:border-indigo-500/20",
+    text: "text-indigo-600 dark:text-indigo-300",
+  },
 ];
 
 const quickActions = [
