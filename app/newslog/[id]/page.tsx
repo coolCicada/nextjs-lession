@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { AppBackground, AppHeader, GlassPanel } from "@/app/ui/app-shell";
 
 type NewsItem = {
@@ -103,8 +105,8 @@ export default function NewsDetailPage() {
               <span className="rounded-full border border-white/60 bg-white/60 px-3 py-1 dark:border-white/10 dark:bg-white/5">触发：{item.syncedFrom}</span>
             </div>
 
-            <div className="mt-8 whitespace-pre-wrap text-[15px] leading-8 text-slate-600 dark:text-slate-300">
-              {item.content}
+            <div className="prose prose-slate mt-8 max-w-none text-[15px] leading-8 dark:prose-invert prose-headings:tracking-tight prose-pre:rounded-2xl prose-pre:border prose-pre:border-white/10 prose-pre:bg-slate-950 prose-code:rounded prose-code:bg-slate-100 prose-code:px-1 prose-code:py-0.5 dark:prose-code:bg-white/10">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{item.content}</ReactMarkdown>
             </div>
 
             <div className="mt-8">
