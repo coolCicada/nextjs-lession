@@ -25,6 +25,15 @@ const features = [
     text: 'text-violet-600 dark:text-violet-300',
   },
   {
+    href: '/finance-learning',
+    title: '财经学习',
+    desc: '采集、预测、洞察与数据管理',
+    icon: '📈',
+    accent: 'from-amber-300/20 to-rose-300/10',
+    border: 'border-amber-200/70 dark:border-amber-500/20',
+    text: 'text-amber-600 dark:text-amber-300',
+  },
+  {
     href: '/englishlog',
     title: '英语库',
     desc: '每日英语与学习沉淀',
