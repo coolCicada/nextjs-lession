@@ -1,5 +1,9 @@
+import { unstable_noStore as noStore } from 'next/cache';
 import { AppBackground, AppHeader, GlassPanel } from '@/app/ui/app-shell';
 import { getRecentSleepLogs, getSleepStats } from './_lib/db';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 // ── 工具函数 ──────────────────────────────────────────────────────────────────
 
@@ -38,6 +42,7 @@ function sourceBadgeClass(source: string): string {
 // ── 页面组件 ──────────────────────────────────────────────────────────────────
 
 export default async function SleepLogPage() {
+  noStore();
   const [logs, stats] = await Promise.all([
     getRecentSleepLogs(14),
     getSleepStats(),
