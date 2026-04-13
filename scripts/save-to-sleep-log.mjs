@@ -19,36 +19,35 @@
 import 'dotenv/config';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { sql } from '@vercel/postgres';
 
 // ── 环境加载 ──────────────────────────────────────────────────────────────────
 
-const WORKSPACE_CANDIDATES = [
-  '/Users/liangsai/.openclaw/workspace',
-  '/Users/liangsai/.openclaw.pre-migration/workspace',
-];
+const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
+const PROJECT_ROOT = path.resolve(SCRIPT_DIR, '..');
 
-function resolveNextjsRoot() {
-  for (const workspace of WORKSPACE_CANDIDATES) {
-    const nextjsRoot = path.join(workspace, 'nextjs-lession');
-    const envFile = path.join(nextjsRoot, '.env.local');
+function resolveEnvFile() {
+  const candidates = [
+    path.join(process.cwd(), '.env.local'),
+    path.join(process.cwd(), '.env'),
+    path.join(PROJECT_ROOT, '.env.local'),
+    path.join(PROJECT_ROOT, '.env'),
+  ];
+
+  for (const envFile of candidates) {
     try {
       readFileSync(envFile, 'utf8');
-      return { workspace, nextjsRoot, envFile };
+      return envFile;
     } catch {
       // 尝试下一个候选路径
     }
   }
-  const fallbackWorkspace = WORKSPACE_CANDIDATES[WORKSPACE_CANDIDATES.length - 1];
-  const nextjsRoot = path.join(fallbackWorkspace, 'nextjs-lession');
-  return {
-    workspace: fallbackWorkspace,
-    nextjsRoot,
-    envFile: path.join(nextjsRoot, '.env.local'),
-  };
+
+  return path.join(PROJECT_ROOT, '.env.local');
 }
 
-const { envFile: ENV_FILE } = resolveNextjsRoot();
+const ENV_FILE = resolveEnvFile();
 
 function loadEnv() {
   try {
