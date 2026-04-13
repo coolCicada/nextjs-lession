@@ -86,6 +86,20 @@ function localDateFromISO(isoString) {
   return isoString.slice(0, 10);
 }
 
+/** 把带时区的 ISO 时间转成上海本地的无时区时间字符串：YYYY-MM-DD HH:MM:SS */
+function toShanghaiLocalTimestamp(isoString) {
+  return new Intl.DateTimeFormat('sv-SE', {
+    timeZone: 'Asia/Shanghai',
+    hour12: false,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }).format(new Date(isoString));
+}
+
 function parseArgs() {
   const args = process.argv.slice(2);
   const result = {};
@@ -186,7 +200,7 @@ async function main() {
       process.exit(1);
     }
 
-    const now = new Date().toISOString();
+    const now = toShanghaiLocalTimestamp(new Date().toISOString());
 
     // upsert：冲突时更新除 created_at 以外的所有可变字段
     const { rows } = await sql`
@@ -197,9 +211,9 @@ async function main() {
       ) VALUES (
         ${userId},
         ${sleepDate}::DATE,
-        ${confirmedAt}::TIMESTAMP WITH TIME ZONE,
+        ${toShanghaiLocalTimestamp(confirmedAt)}::TIMESTAMP,
         ${originalText},
-        ${reminderAt}::TIMESTAMP WITH TIME ZONE,
+        ${reminderAt ? toShanghaiLocalTimestamp(reminderAt) : null}::TIMESTAMP,
         ${reminderStep},
         ${source},
         ${syncedFrom},

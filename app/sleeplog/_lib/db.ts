@@ -38,8 +38,8 @@ export async function getRecentSleepLogs(limit = 14): Promise<SleepLogRow[]> {
       SELECT
         id,
         TO_CHAR(sleep_date, 'YYYY-MM-DD')                                         AS sleep_date,
-        TO_CHAR(confirmed_at AT TIME ZONE 'Asia/Shanghai', 'MM-DD HH24:MI')       AS confirmed_at_sh,
-        EXTRACT(EPOCH FROM confirmed_at)::FLOAT8                                  AS confirmed_epoch,
+        TO_CHAR(confirmed_at, 'MM-DD HH24:MI')                                     AS confirmed_at_sh,
+        EXTRACT(EPOCH FROM confirmed_at AT TIME ZONE 'Asia/Shanghai')::FLOAT8      AS confirmed_epoch,
         original_text,
         reminder_step,
         COALESCE(source, 'telegram')                                              AS source,
@@ -61,9 +61,8 @@ export async function getSleepStats(): Promise<SleepStats> {
     const { rows: totRows } = await sql`
       SELECT
         COUNT(*)::INT                                                              AS total,
-        TO_CHAR(MAX(confirmed_at) AT TIME ZONE 'Asia/Shanghai', 'YYYY-MM-DD HH24:MI')
-                                                                                  AS latest_confirmed_sh,
-        EXTRACT(EPOCH FROM MAX(confirmed_at))::FLOAT8                             AS latest_confirmed_epoch
+        TO_CHAR(MAX(confirmed_at), 'YYYY-MM-DD HH24:MI')                          AS latest_confirmed_sh,
+        EXTRACT(EPOCH FROM MAX(confirmed_at) AT TIME ZONE 'Asia/Shanghai')::FLOAT8 AS latest_confirmed_epoch
       FROM sleep_logs
     `;
     const total: number               = totRows[0]?.total              ?? 0;
@@ -74,8 +73,8 @@ export async function getSleepStats(): Promise<SleepStats> {
     // 近 7 条确认时刻的平均值（Asia/Shanghai，分钟数）
     const { rows: avgRows } = await sql`
       SELECT AVG(
-        EXTRACT(HOUR  FROM confirmed_at AT TIME ZONE 'Asia/Shanghai') * 60 +
-        EXTRACT(MINUTE FROM confirmed_at AT TIME ZONE 'Asia/Shanghai')
+        EXTRACT(HOUR  FROM confirmed_at) * 60 +
+        EXTRACT(MINUTE FROM confirmed_at)
       )::INT AS avg_minutes
       FROM (
         SELECT confirmed_at
