@@ -86,19 +86,6 @@ function localDateFromISO(isoString) {
   return isoString.slice(0, 10);
 }
 
-/** 把带时区的 ISO 时间转成上海本地的无时区时间字符串：YYYY-MM-DD HH:MM:SS */
-function toShanghaiLocalTimestamp(isoString) {
-  return new Intl.DateTimeFormat('sv-SE', {
-    timeZone: 'Asia/Shanghai',
-    hour12: false,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  }).format(new Date(isoString));
-}
 
 function parseArgs() {
   const args = process.argv.slice(2);
@@ -131,19 +118,39 @@ async function ensureSchema() {
       id            UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),
       user_id       UUID,
       sleep_date    DATE        NOT NULL,
-      confirmed_at  TIMESTAMP   NOT NULL,
+      confirmed_at  TIMESTAMPTZ NOT NULL,
       original_text TEXT        NOT NULL,
-      reminder_at   TIMESTAMP   NULL,
+      reminder_at   TIMESTAMPTZ NULL,
       reminder_step INTEGER     NULL,
       source        VARCHAR(50) DEFAULT 'telegram',
       synced_from   VARCHAR(50) DEFAULT 'cron',
       record_type   VARCHAR(50) DEFAULT 'sleep-log',
-      created_at    TIMESTAMP   DEFAULT CURRENT_TIMESTAMP,
-      updated_at    TIMESTAMP   DEFAULT CURRENT_TIMESTAMP,
+      created_at    TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+      updated_at    TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
       sync_status   VARCHAR(30) DEFAULT 'synced',
-      synced_at     TIMESTAMP   NULL,
+      synced_at     TIMESTAMPTZ NULL,
       sync_error    TEXT        NULL
     )
+  `;
+
+  await sql`
+    DO $$
+    BEGIN
+      IF EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_name = 'sleep_logs'
+          AND column_name = 'confirmed_at'
+          AND data_type = 'timestamp without time zone'
+      ) THEN
+        ALTER TABLE sleep_logs
+          ALTER COLUMN confirmed_at TYPE TIMESTAMPTZ USING confirmed_at AT TIME ZONE 'Asia/Shanghai',
+          ALTER COLUMN reminder_at TYPE TIMESTAMPTZ USING reminder_at AT TIME ZONE 'Asia/Shanghai',
+          ALTER COLUMN created_at TYPE TIMESTAMPTZ USING created_at AT TIME ZONE 'Asia/Shanghai',
+          ALTER COLUMN updated_at TYPE TIMESTAMPTZ USING updated_at AT TIME ZONE 'Asia/Shanghai',
+          ALTER COLUMN synced_at TYPE TIMESTAMPTZ USING synced_at AT TIME ZONE 'Asia/Shanghai';
+      END IF;
+    END $$;
   `;
 
   // 唯一索引：同一用户同一天只保留一条记录（upsert 的冲突目标）
@@ -200,7 +207,7 @@ async function main() {
       process.exit(1);
     }
 
-    const now = toShanghaiLocalTimestamp(new Date().toISOString());
+    const now = new Date().toISOString();
 
     // upsert：冲突时更新除 created_at 以外的所有可变字段
     const { rows } = await sql`
@@ -211,9 +218,9 @@ async function main() {
       ) VALUES (
         ${userId},
         ${sleepDate}::DATE,
-        ${toShanghaiLocalTimestamp(confirmedAt)}::TIMESTAMP,
+        ${confirmedAt}::TIMESTAMPTZ,
         ${originalText},
-        ${reminderAt ? toShanghaiLocalTimestamp(reminderAt) : null}::TIMESTAMP,
+        ${reminderAt}::TIMESTAMPTZ,
         ${reminderStep},
         ${source},
         ${syncedFrom},
