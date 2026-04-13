@@ -69,6 +69,15 @@ const features = [
     border: 'border-indigo-200/70 dark:border-indigo-500/20',
     text: 'text-indigo-600 dark:text-indigo-300',
   },
+  {
+    href: '/sleeplog',
+    title: '睡眠记录',
+    desc: '每日睡眠确认时间与作息规律追踪',
+    icon: '◑',
+    accent: 'from-blue-400/20 to-cyan-300/10',
+    border: 'border-blue-200/70 dark:border-blue-500/20',
+    text: 'text-blue-600 dark:text-blue-300',
+  },
 ];
 
 const quickActions = [
