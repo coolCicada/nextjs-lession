@@ -95,7 +95,7 @@ export async function getSleepLogsPage(
 // ── Trend query for chart ─────────────────────────────────────────────────────
 
 export type SleepTrendPoint = {
-  /** 'MM-DD' (Asia/Shanghai) */
+  /** 原始记录日（YYYY-MM-DD，Asia/Shanghai） */
   sleep_date: string;
   /** minutes since midnight in Asia/Shanghai (0-1439) */
   confirmed_minutes: number;
@@ -106,7 +106,7 @@ export async function getSleepTrend(limit: number = 30): Promise<SleepTrendPoint
   try {
     const { rows } = await sql`
       SELECT
-        TO_CHAR(sleep_date, 'MM-DD') AS sleep_date,
+        TO_CHAR(sleep_date, 'YYYY-MM-DD') AS sleep_date,
         (
           EXTRACT(HOUR  FROM confirmed_at AT TIME ZONE 'Asia/Shanghai') * 60 +
           EXTRACT(MINUTE FROM confirmed_at AT TIME ZONE 'Asia/Shanghai')

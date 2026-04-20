@@ -12,6 +12,19 @@ function fmtMinutes(m: number): string {
   return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
 }
 
+function addDays(dateStr: string, days: number): string {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  if (!y || !m || !d) return dateStr;
+  const date = new Date(Date.UTC(y, m - 1, d));
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+function toDisplayDate(dateStr: string, minutes: number): string {
+  const actualDate = minutes < 720 ? addDays(dateStr, 1) : dateStr;
+  return actualDate.slice(5).replace('-', '-');
+}
+
 export default function SleepChart({ data }: { data: SleepTrendPoint[] }) {
   if (data.length === 0) {
     return (
@@ -65,13 +78,13 @@ export default function SleepChart({ data }: { data: SleepTrendPoint[] }) {
   const points = normalized.map((d, i) => `${toX(d, i)},${toY(d.nm)}`).join(' ');
 
   return (
-    <svg
+      <svg
       viewBox={`0 0 ${W} ${H}`}
       width="100%"
-      aria-label="睡眠确认时间趋势"
+      aria-label="睡眠确认时间趋势（按实际入睡日显示）"
       className="overflow-visible"
     >
-      {/* grid lines */}
+{/* grid lines */}
       {yTicks.map((t) => (
         <line
           key={t}
@@ -130,7 +143,7 @@ export default function SleepChart({ data }: { data: SleepTrendPoint[] }) {
           strokeWidth={1.5}
           className="dark:stroke-slate-900"
         >
-          <title>{`${d.sleep_date} ${fmtMinutes(d.nm)}`}</title>
+          <title>{`${toDisplayDate(d.sleep_date, d.confirmed_minutes)} · ${fmtMinutes(d.nm)}`}</title>
         </circle>
       ))}
 
@@ -144,7 +157,7 @@ export default function SleepChart({ data }: { data: SleepTrendPoint[] }) {
           fontSize={10}
           className="fill-slate-400 dark:fill-slate-500"
         >
-          {normalized[i].sleep_date}
+          {toDisplayDate(normalized[i].sleep_date, normalized[i].confirmed_minutes)}
         </text>
       ))}
 

@@ -143,7 +143,7 @@ export default async function SleepLogPage({
               Trend
             </p>
             <h2 className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">
-              确认时刻趋势
+              实际入睡日趋势
             </h2>
           </div>
           <div className="px-4 pb-4 pt-3 sm:px-6">
