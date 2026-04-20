@@ -54,6 +54,77 @@ export async function getRecentSleepLogs(limit = 14): Promise<SleepLogRow[]> {
   }
 }
 
+// ── Paginated query ──────────────────────────────────────────────────────────
+
+export type SleepLogPage = {
+  rows: SleepLogRow[];
+  total: number;
+};
+
+/** 分页查询睡眠记录 */
+export async function getSleepLogsPage(
+  page: number,
+  pageSize: number = 10,
+): Promise<SleepLogPage> {
+  try {
+    const offset = (page - 1) * pageSize;
+    const [{ rows }, { rows: countRows }] = await Promise.all([
+      sql`
+        SELECT
+          id,
+          TO_CHAR(sleep_date, 'YYYY-MM-DD')                                       AS sleep_date,
+          TO_CHAR(confirmed_at AT TIME ZONE 'Asia/Shanghai', 'MM-DD HH24:MI')     AS confirmed_at_sh,
+          EXTRACT(EPOCH FROM confirmed_at)::FLOAT8                                AS confirmed_epoch,
+          original_text,
+          reminder_step,
+          COALESCE(source, 'telegram')                                            AS source,
+          COALESCE(synced_from, 'cron')                                           AS synced_from
+        FROM sleep_logs
+        ORDER BY sleep_date DESC, confirmed_at DESC
+        LIMIT ${pageSize}
+        OFFSET ${offset}
+      `,
+      sql`SELECT COUNT(*)::INT AS total FROM sleep_logs`,
+    ]);
+    return { rows: rows as SleepLogRow[], total: countRows[0]?.total ?? 0 };
+  } catch {
+    return { rows: [], total: 0 };
+  }
+}
+
+// ── Trend query for chart ─────────────────────────────────────────────────────
+
+export type SleepTrendPoint = {
+  /** 'MM-DD' (Asia/Shanghai) */
+  sleep_date: string;
+  /** minutes since midnight in Asia/Shanghai (0-1439) */
+  confirmed_minutes: number;
+};
+
+/** 获取近 N 条记录用于趋势图（按日期升序） */
+export async function getSleepTrend(limit: number = 30): Promise<SleepTrendPoint[]> {
+  try {
+    const { rows } = await sql`
+      SELECT
+        TO_CHAR(sleep_date, 'MM-DD') AS sleep_date,
+        (
+          EXTRACT(HOUR  FROM confirmed_at AT TIME ZONE 'Asia/Shanghai') * 60 +
+          EXTRACT(MINUTE FROM confirmed_at AT TIME ZONE 'Asia/Shanghai')
+        )::INT AS confirmed_minutes
+      FROM (
+        SELECT sleep_date, confirmed_at
+        FROM sleep_logs
+        ORDER BY sleep_date DESC, confirmed_at DESC
+        LIMIT ${limit}
+      ) sub
+      ORDER BY sleep_date ASC, confirmed_at ASC
+    `;
+    return rows as SleepTrendPoint[];
+  } catch {
+    return [];
+  }
+}
+
 /** 获取汇总统计：总数、最近确认、近7条均值、今日状态 */
 export async function getSleepStats(): Promise<SleepStats> {
   try {

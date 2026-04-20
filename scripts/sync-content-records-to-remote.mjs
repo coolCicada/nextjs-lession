@@ -8,7 +8,7 @@ const APP_ROOT = process.cwd();
 dotenv.config({ path: path.join(APP_ROOT, '.env.local') });
 dotenv.config();
 
-const WORKSPACE = '/Users/liangsai/.openclaw/workspace';
+const WORKSPACE = path.resolve(APP_ROOT, '..');
 const DB_PATH = path.join(WORKSPACE, 'data', 'content-records.sqlite');
 const LOG_FILE = path.join(WORKSPACE, 'logs', 'content-sync-remote.log');
 
