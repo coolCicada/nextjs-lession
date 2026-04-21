@@ -17,7 +17,7 @@ export default function FinanceLearningLayout({
             <div>
               <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-slate-200/80 bg-white px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
                 <span className="h-2 w-2 rounded-full bg-emerald-400" />
-                Finance Learning
+                Finance Cockpit
               </div>
               <div className="flex items-center gap-3">
                 <Link
@@ -28,10 +28,10 @@ export default function FinanceLearningLayout({
                 </Link>
                 <div>
                   <h1 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
-                    财经自我学习
+                    理财系统驾驶舱
                   </h1>
                   <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                    把采集、预测、回看和数据管理收拢到同一个线上模块里。
+                    实时行情 · 决策摘要 · 模型复盘 · 数据管理
                   </p>
                 </div>
               </div>

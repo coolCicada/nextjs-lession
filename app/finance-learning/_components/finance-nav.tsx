@@ -4,9 +4,9 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const items = [
-  { href: '/finance-learning', label: '仪表盘' },
+  { href: '/finance-learning', label: '驾驶舱' },
   { href: '/finance-learning/history', label: '历史预测' },
-  { href: '/finance-learning/insights', label: '学习洞察' },
+  { href: '/finance-learning/insights', label: '洞察复盘' },
   { href: '/finance-learning/data', label: '数据管理' },
 ];
 
